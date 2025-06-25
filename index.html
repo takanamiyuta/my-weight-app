@@ -316,11 +316,134 @@
             border: 1px solid #fecaca;
         }
 
-        .export-section {
-            background: #f8fafc;
+        .goal-section {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
             padding: 20px;
-            border-radius: 10px;
-            margin-top: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .goal-input-form {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .goal-input-form input {
+            width: 100px;
+            padding: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #1f2937;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .goal-display {
+            display: none;
+        }
+
+        .goal-display.active {
+            display: block;
+        }
+
+        .goal-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .goal-stat {
+            text-align: center;
+        }
+
+        .goal-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .goal-stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .progress-container {
+            margin: 20px 0;
+        }
+
+        .progress-item {
+            margin-bottom: 15px;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-days {
+            background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+        }
+
+        .progress-weight {
+            background: linear-gradient(90deg, #f59e0b, #d97706);
+        }
+
+        .progress-weight.completed {
+            background: linear-gradient(90deg, #ef4444, #dc2626);
+        }
+
+        .clear-achievement {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 900;
+            color: #fbbf24;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .btn-goal {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-goal:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.8);
+            transform: translateY(-1px);
         }
 
         .button-group {
@@ -338,7 +461,49 @@
             display: table-row;
         }
 
+        .export-section {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
         /* スマートフォン最適化 */
+        @media (max-width: 768px) {
+            .goal-section {
+                padding: 15px;
+                margin-bottom: 20px;
+            }
+
+            .goal-input-form {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+
+            .goal-input-form input {
+                width: 100%;
+                max-width: 200px;
+                margin: 0 auto;
+            }
+
+            .goal-stats {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+
+            .goal-stat-value {
+                font-size: 1.2rem;
+            }
+
+            .goal-stat-label {
+                font-size: 0.8rem;
+            }
+
+            .clear-achievement {
+                font-size: 1.5rem;
+            }
+        }
         @media (max-width: 768px) {
             body {
                 padding: 5px;
@@ -552,7 +717,7 @@
     <div class="container">
         <div class="header">
             <h1>💪 俺の大会までの道のり</h1>
-            <p>Ver1.30 [スマホ版グラフ色修正 - 筋トレ日#d9333f反映]</p>
+            <p>Ver1.31 [目標設定機能追加 - プログレスバー2本・Clear表示]</p>
         </div>
 
         <div class="tabs">
@@ -578,6 +743,70 @@
 
         <!-- 日次データ管理タブ -->
         <div id="daily" class="tab-content active">
+            <!-- 目標設定セクション -->
+            <div class="goal-section" id="goal-section">
+                <div id="goal-input" class="goal-input-form">
+                    <h3>🎯 目標体重を設定してください</h3>
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                        <input type="number" id="target-weight" min="40" max="100" step="0.1" placeholder="65.0">
+                        <span style="font-weight: 600;">kg</span>
+                        <button type="button" class="btn-goal" onclick="setGoal()">設定する</button>
+                    </div>
+                </div>
+                
+                <div id="goal-display" class="goal-display">
+                    <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 15px;">
+                        <h3 id="goal-title">🎯 目標: --kg</h3>
+                        <button type="button" class="btn-goal" onclick="resetGoal()" style="margin-left: auto;">再設定</button>
+                    </div>
+                    
+                    <div class="goal-stats">
+                        <div class="goal-stat">
+                            <div class="goal-stat-value" id="remaining-days">--</div>
+                            <div class="goal-stat-label">残り日数</div>
+                        </div>
+                        <div class="goal-stat">
+                            <div class="goal-stat-value" id="remaining-weight">--</div>
+                            <div class="goal-stat-label">残り減量</div>
+                        </div>
+                        <div class="goal-stat">
+                            <div class="goal-stat-value" id="current-weight-display">--</div>
+                            <div class="goal-stat-label">現在体重</div>
+                        </div>
+                        <div class="goal-stat">
+                            <div class="goal-stat-value" id="daily-target">--</div>
+                            <div class="goal-stat-label">1日目標</div>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-container">
+                        <div class="progress-item">
+                            <div class="progress-label">
+                                <span>📅 日数進捗</span>
+                                <span id="days-progress-text">0%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill progress-days" id="days-progress-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="progress-item">
+                            <div class="progress-label">
+                                <span id="weight-progress-label">⚖️ 減量進捗</span>
+                                <span id="weight-progress-text">0%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill progress-weight" id="weight-progress-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        
+                        <div id="clear-achievement" class="clear-achievement" style="display: none;">
+                            🎉 Clear！ 🎉
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="form-section">
                 <h3>📊 日次データ入力</h3>
                 <form id="daily-form">
@@ -808,6 +1037,7 @@
         let dailyData = [];
         let trainingData = [];
         let analysisChart = null;
+        let targetGoal = null;
 
         // 日本の祝日データ (2025年)
         const holidays2025 = [
@@ -820,6 +1050,7 @@
         // 初期化
         document.addEventListener('DOMContentLoaded', function() {
             loadAllData();
+            loadGoalData();
             setupDateDefaults();
             setupEventListeners();
             setupInputValidation();
@@ -917,10 +1148,143 @@
 
                 updateDailyTable();
                 updateTrainingTable();
+                updateGoalProgress();
                 showStatus('データの読み込みが完了しました');
             } catch (error) {
                 console.error('データ読み込みエラー:', error);
                 showStatus('データの読み込みに失敗しました', 'error');
+            }
+        }
+
+        // 目標データ読み込み
+        async function loadGoalData() {
+            try {
+                const response = await fetch(`${API_BASE}/get-goal-data`);
+                if (response.ok) {
+                    targetGoal = await response.json();
+                    if (targetGoal) {
+                        showGoalDisplay();
+                        updateGoalProgress();
+                    }
+                }
+            } catch (error) {
+                console.error('目標データ読み込みエラー:', error);
+            }
+        }
+
+        // 目標設定
+        async function setGoal() {
+            const targetWeight = parseFloat(document.getElementById('target-weight').value);
+            
+            if (!targetWeight || targetWeight < 40 || targetWeight > 100) {
+                showStatus('目標体重は40kg〜100kgの範囲で入力してください', 'error');
+                return;
+            }
+
+            // 現在の体重を取得（最新の記録）
+            const latestWeight = dailyData.length > 0 ? 
+                dailyData.sort((a, b) => new Date(b.date) - new Date(a.date))[0].weight : null;
+
+            if (!latestWeight) {
+                showStatus('まず体重データを入力してください', 'error');
+                return;
+            }
+
+            const goalData = {
+                targetWeight: targetWeight,
+                setDate: new Date().toISOString().split('T')[0],
+                startWeight: latestWeight
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/save-goal-data`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(goalData)
+                });
+
+                if (response.ok) {
+                    targetGoal = goalData;
+                    showGoalDisplay();
+                    updateGoalProgress();
+                    showStatus('目標を設定しました！');
+                } else {
+                    throw new Error('目標設定に失敗しました');
+                }
+            } catch (error) {
+                console.error('目標設定エラー:', error);
+                showStatus('目標設定に失敗しました', 'error');
+            }
+        }
+
+        // 目標再設定
+        function resetGoal() {
+            if (confirm('目標をリセットしますか？')) {
+                document.getElementById('goal-input').style.display = 'block';
+                document.getElementById('goal-display').classList.remove('active');
+                document.getElementById('target-weight').value = '';
+                targetGoal = null;
+            }
+        }
+
+        // 目標表示切り替え
+        function showGoalDisplay() {
+            document.getElementById('goal-input').style.display = 'none';
+            document.getElementById('goal-display').classList.add('active');
+        }
+
+        // 目標進捗更新
+        function updateGoalProgress() {
+            if (!targetGoal || dailyData.length === 0) return;
+
+            // 現在の体重（最新記録）
+            const currentWeight = dailyData.sort((a, b) => new Date(b.date) - new Date(a.date))[0].weight;
+            
+            // 日数計算
+            const today = new Date();
+            const targetDate = new Date('2025-10-18');
+            const startDate = new Date(targetGoal.setDate);
+            const totalDays = Math.ceil((targetDate - startDate) / (1000 * 60 * 60 * 24));
+            const elapsedDays = Math.ceil((today - startDate) / (1000 * 60 * 60 * 24));
+            const remainingDays = Math.max(0, Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24)));
+            
+            // 減量計算
+            const totalWeightToLose = targetGoal.startWeight - targetGoal.targetWeight;
+            const currentWeightLoss = targetGoal.startWeight - currentWeight;
+            const remainingWeight = currentWeight - targetGoal.targetWeight;
+            const dailyTarget = remainingWeight > 0 ? (remainingWeight / Math.max(1, remainingDays)).toFixed(3) : 0;
+            
+            // 進捗率計算
+            const daysProgress = Math.min(100, (elapsedDays / totalDays) * 100);
+            const weightProgress = totalWeightToLose > 0 ? Math.min(100, (currentWeightLoss / totalWeightToLose) * 100) : 0;
+            const isCompleted = weightProgress >= 100;
+
+            // 表示更新
+            document.getElementById('goal-title').textContent = `🎯 目標: ${targetGoal.targetWeight}kg`;
+            document.getElementById('remaining-days').textContent = `${remainingDays}日`;
+            document.getElementById('remaining-weight').textContent = isCompleted ? '達成！' : `${remainingWeight.toFixed(1)}kg`;
+            document.getElementById('current-weight-display').textContent = `${currentWeight}kg`;
+            document.getElementById('daily-target').textContent = isCompleted ? '達成！' : `${dailyTarget}kg/日`;
+            
+            // 日数進捗
+            document.getElementById('days-progress-text').textContent = `${Math.round(daysProgress)}%`;
+            document.getElementById('days-progress-bar').style.width = `${daysProgress}%`;
+            
+            // 減量進捗
+            if (isCompleted) {
+                document.getElementById('weight-progress-label').textContent = '🎉 減量達成';
+                document.getElementById('weight-progress-text').textContent = 'Clear！';
+                document.getElementById('weight-progress-bar').classList.add('completed');
+                document.getElementById('weight-progress-bar').style.width = '100%';
+                document.getElementById('clear-achievement').style.display = 'block';
+            } else {
+                document.getElementById('weight-progress-label').textContent = '⚖️ 減量進捗';
+                document.getElementById('weight-progress-text').textContent = `${Math.round(weightProgress)}%`;
+                document.getElementById('weight-progress-bar').classList.remove('completed');
+                document.getElementById('weight-progress-bar').style.width = `${weightProgress}%`;
+                document.getElementById('clear-achievement').style.display = 'none';
             }
         }
 
@@ -963,6 +1327,7 @@
                     const result = await response.json();
                     showStatus('日次データを保存しました');
                     loadAllData(); // データを再読み込み
+                    updateGoalProgress(); // 目標進捗を更新
                     clearDailyForm();
                 } else {
                     throw new Error('保存に失敗しました');
