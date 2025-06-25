@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>体重・トレーニング管理システム</title>
+    <title>俺の大会までの道のり</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💪</text></svg>">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         * {
@@ -284,6 +285,14 @@
             margin-top: 20px;
         }
 
+        .mobile-header {
+            display: none;
+        }
+
+        .desktop-header {
+            display: table-row;
+        }
+
         @media (max-width: 768px) {
             .container {
                 margin: 10px;
@@ -324,6 +333,14 @@
                 min-width: 80px;
             }
 
+            .mobile-header {
+                display: table-row;
+            }
+
+            .desktop-header {
+                display: none;
+            }
+
             .chart-container {
                 padding: 15px;
                 overflow: hidden;
@@ -344,8 +361,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>💪 体重・トレーニング管理システム</h1>
-            <p>Netlify Functions対応版 - サーバーレスデータ管理</p>
+            <h1>💪 俺の大会までの道のり</h1>
+            <p>Ver1.02 [筋トレ消費カロリー算出&スマホ対応]</p>
         </div>
 
         <div class="tabs">
@@ -393,7 +410,7 @@
                 <h3>📈 日次データ一覧</h3>
                 <table class="data-table" id="daily-table">
                     <thead>
-                        <tr>
+                        <tr class="desktop-header">
                             <th>日付</th>
                             <th>体重 (kg)</th>
                             <th>前日比</th>
@@ -403,6 +420,17 @@
                             <th>筋トレ消費カロリー</th>
                             <th>イベント</th>
                             <th>操作</th>
+                        </tr>
+                        <tr class="mobile-header">
+                            <th>📅</th>
+                            <th>⚖️</th>
+                            <th>🧮</th>
+                            <th>🍚</th>
+                            <th>🚶</th>
+                            <th>🚶</th>
+                            <th>🏋️</th>
+                            <th>📝</th>
+                            <th>❌</th>
                         </tr>
                     </thead>
                     <tbody id="daily-table-body">
@@ -510,7 +538,7 @@
                 <h3>📋 トレーニング記録一覧</h3>
                 <table class="data-table" id="training-table">
                     <thead>
-                        <tr>
+                        <tr class="desktop-header">
                             <th>日付</th>
                             <th>種目</th>
                             <th>重量 (kg)</th>
@@ -519,6 +547,16 @@
                             <th>推定1RM (kg)</th>
                             <th>トレーニングボリューム</th>
                             <th>操作</th>
+                        </tr>
+                        <tr class="mobile-header">
+                            <th>📅</th>
+                            <th>🏋️</th>
+                            <th>⚖️</th>
+                            <th>🔢</th>
+                            <th>🔢</th>
+                            <th>💪</th>
+                            <th>📊</th>
+                            <th>❌</th>
                         </tr>
                     </thead>
                     <tbody id="training-table-body">
@@ -531,7 +569,7 @@
         <!-- データ分析・グラフタブ -->
         <div id="analysis" class="tab-content">
             <div class="chart-container">
-                <h3>📊 総合データ分析グラフ</h3>
+                <h3 id="chart-title">大会当日は計算中...kgで着地見込み！</h3>
                 <canvas id="analysisChart" width="400" height="200"></canvas>
             </div>
         </div>
@@ -847,7 +885,10 @@
                     <td>${walkingCalories}</td>
                     <td>${trainingCalories}</td>
                     <td>${item.event || '-'}</td>
-                    <td><button class="btn" onclick="deleteDailyData('${item.date}')" style="padding: 5px 10px; font-size: 0.8rem;">削除</button></td>
+                    <td>
+                        <button class="btn" onclick="editDailyData('${item.date}')" style="padding: 5px 10px; font-size: 0.8rem; margin-right: 5px;">編集</button>
+                        <button class="btn" onclick="deleteDailyData('${item.date}')" style="padding: 5px 10px; font-size: 0.8rem;">削除</button>
+                    </td>
                 `;
                 tbody.appendChild(row);
             });
@@ -873,10 +914,55 @@
                     <td>${item.sets}</td>
                     <td>${item.estimated1RM ? item.estimated1RM.toFixed(1) : '-'}</td>
                     <td>${item.trainingVolume ? Math.round(item.trainingVolume).toLocaleString() : '-'}</td>
-                    <td><button class="btn" onclick="deleteTrainingData(${index})" style="padding: 5px 10px; font-size: 0.8rem;">削除</button></td>
+                    <td>
+                        <button class="btn" onclick="editTrainingData(${index})" style="padding: 5px 10px; font-size: 0.8rem; margin-right: 5px;">編集</button>
+                        <button class="btn" onclick="deleteTrainingData(${index})" style="padding: 5px 10px; font-size: 0.8rem;">削除</button>
+                    </td>
                 `;
                 tbody.appendChild(row);
             });
+        }
+
+        // 日次データ編集機能
+        function editDailyData(date) {
+            const item = dailyData.find(d => d.date === date);
+            if (!item) return;
+
+            // フォームに値を設定
+            document.getElementById('daily-date').value = item.date;
+            document.getElementById('weight').value = item.weight;
+            document.getElementById('calories').value = item.calories;
+            document.getElementById('steps').value = item.steps;
+            document.getElementById('event').value = item.event || '';
+
+            // 日次データ管理タブに移動
+            showTab('daily');
+            
+            // フォームまでスクロール
+            document.getElementById('daily-form').scrollIntoView({ behavior: 'smooth' });
+            
+            showStatus('データを編集モードで読み込みました。修正して保存してください。', 'success');
+        }
+
+        // トレーニングデータ編集機能
+        function editTrainingData(index) {
+            const item = trainingData[index];
+            if (!item) return;
+
+            // フォームに値を設定
+            document.getElementById('training-date').value = item.date;
+            document.getElementById('exercise').value = item.exercise;
+            document.getElementById('training-weight').value = item.weight;
+            document.getElementById('reps').value = item.reps;
+            document.getElementById('sets').value = item.sets;
+
+            // 筋力トレーニング管理タブに移動
+            showTab('training');
+            
+            // フォームまでスクロール
+            document.getElementById('training-form').scrollIntoView({ behavior: 'smooth' });
+            
+            showStatus('データを編集モードで読み込みました。修正して保存してください。', 'success');
         }
 
         // データ削除処理
@@ -955,9 +1041,7 @@
             });
 
             const weightData = [];
-            const caloriesData = [];
-            const stepsData = [];
-            const trainingCaloriesData = [];
+            const totalCaloriesData = [];
             const eventData = [];
 
             dateRange.forEach(date => {
@@ -966,21 +1050,20 @@
                 
                 if (dailyRecord) {
                     weightData.push(dailyRecord.weight);
-                    caloriesData.push(dailyRecord.calories);
-                    stepsData.push(dailyRecord.steps);
-                    trainingCaloriesData.push(calculateTrainingCalories(dateStr));
+                    const walkingCal = calculateWalkingCalories(dailyRecord.steps);
+                    const trainingCal = calculateTrainingCalories(dateStr);
+                    totalCaloriesData.push(walkingCal + trainingCal);
                     eventData.push(dailyRecord.event || '');
                 } else {
                     weightData.push(null);
-                    caloriesData.push(null);
-                    stepsData.push(null);
-                    trainingCaloriesData.push(null);
+                    totalCaloriesData.push(null);
                     eventData.push('');
                 }
             });
 
-            // 体重予測線の計算（安全な計算）
+            // 体重予測線の計算
             let predictionData = [];
+            let predictedWeight = null;
             const validWeights = weightData.filter(w => w !== null && !isNaN(w));
             
             if (validWeights.length >= 2) {
@@ -993,15 +1076,32 @@
                 
                 // 予測体重を計算（10月18日時点）
                 const endDateIndex = labels.length - 1;
-                const predictedWeight = firstWeight + (trend * endDateIndex);
+                predictedWeight = firstWeight + (trend * endDateIndex);
+                predictedWeight = Math.max(40, Math.min(200, predictedWeight)); // 40-200kgの範囲に制限
                 
                 // 予測線データを作成（開始点と終了点のみ）
                 predictionData = new Array(labels.length).fill(null);
                 if (validWeights.length > 0) {
                     predictionData[0] = firstWeight;
-                    predictionData[endDateIndex] = Math.max(40, Math.min(200, predictedWeight)); // 40-200kgの範囲に制限
+                    predictionData[endDateIndex] = predictedWeight;
                 }
             }
+
+            // タイトルを更新
+            const chartTitle = document.getElementById('chart-title');
+            if (predictedWeight !== null) {
+                chartTitle.textContent = `大会当日は${predictedWeight.toFixed(1)}kgで着地見込み！`;
+            } else {
+                chartTitle.textContent = '大会当日は計算中...kgで着地見込み！';
+            }
+
+            // 軸の範囲計算
+            const weightMin = validWeights.length > 0 ? Math.min(...validWeights) - 2 : 60;
+            const weightMax = validWeights.length > 0 ? Math.max(...validWeights) + 2 : 80;
+
+            const validCalories = totalCaloriesData.filter(c => c !== null && !isNaN(c) && c > 0);
+            const caloriesMin = validCalories.length > 0 ? Math.max(0, Math.min(...validCalories) - 100) : 0;
+            const caloriesMax = validCalories.length > 0 ? Math.max(...validCalories) + 100 : 1000;
 
             try {
                 analysisChart = new Chart(ctx, {
@@ -1033,27 +1133,8 @@
                             pointRadius: 0,
                             spanGaps: true
                         }, {
-                            label: '摂取カロリー (kcal)',
-                            data: caloriesData,
-                            borderColor: '#f59e0b',
-                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                            borderWidth: 2,
-                            yAxisID: 'y',
-                            tension: 0.1,
-                            pointBackgroundColor: '#f59e0b',
-                            pointRadius: 3,
-                            spanGaps: true
-                        }, {
-                            label: '歩数',
-                            data: stepsData,
-                            type: 'bar',
-                            backgroundColor: 'rgba(59, 130, 246, 0.6)',
-                            borderColor: '#3b82f6',
-                            borderWidth: 1,
-                            yAxisID: 'y1'
-                        }, {
-                            label: '筋トレ消費カロリー (kcal)',
-                            data: trainingCaloriesData,
+                            label: '総消費カロリー (kcal)',
+                            data: totalCaloriesData,
                             borderColor: '#10b981',
                             backgroundColor: 'rgba(16, 185, 129, 0.1)',
                             borderWidth: 2,
@@ -1069,17 +1150,9 @@
                         maintainAspectRatio: false,
                         interaction: {
                             mode: 'index',
-                            intersect: false,
+                            intersect: false
                         },
                         plugins: {
-                            title: {
-                                display: true,
-                                text: '体重・カロリー・運動データの推移',
-                                font: {
-                                    size: 16,
-                                    weight: 'bold'
-                                }
-                            },
                             legend: {
                                 position: 'top'
                             },
@@ -1091,7 +1164,6 @@
                                         if (event && context[0].datasetIndex === 0) {
                                             return `イベント: ${event}`;
                                         }
-                                        // 予測線の場合
                                         if (context[0].datasetIndex === 1 && dataIndex === labels.length - 1) {
                                             return '10月18日の予測体重';
                                         }
@@ -1114,19 +1186,10 @@
                                 position: 'left',
                                 title: {
                                     display: true,
-                                    text: '体重 (kg) / カロリー (kcal)'
+                                    text: '体重 (kg)'
                                 },
-                                min: function(context) {
-                                    const weights = weightData.filter(w => w !== null);
-                                    return weights.length > 0 ? Math.max(40, Math.min(...weights) - 5) : 40;
-                                },
-                                max: function(context) {
-                                    const weights = weightData.filter(w => w !== null);
-                                    const calories = caloriesData.filter(c => c !== null);
-                                    const maxWeight = weights.length > 0 ? Math.max(...weights) : 100;
-                                    const maxCalories = calories.length > 0 ? Math.max(...calories) : 3000;
-                                    return Math.min(200, Math.max(maxWeight + 5, maxCalories + 500));
-                                }
+                                min: weightMin,
+                                max: weightMax
                             },
                             y1: {
                                 type: 'linear',
@@ -1134,23 +1197,21 @@
                                 position: 'right',
                                 title: {
                                     display: true,
-                                    text: '歩数 / 消費カロリー (kcal)'
+                                    text: '消費カロリー (kcal)'
                                 },
                                 grid: {
-                                    drawOnChartArea: false,
+                                    drawOnChartArea: false
                                 },
-                                max: function(context) {
-                                    const steps = stepsData.filter(s => s !== null);
-                                    const maxSteps = steps.length > 0 ? Math.max(...steps) : 15000;
-                                    return Math.min(50000, maxSteps + 5000);
-                                }
+                                min: caloriesMin,
+                                max: caloriesMax
                             }
                         }
                     }
                 });
             } catch (error) {
                 console.error('グラフの描画でエラーが発生しました:', error);
-                document.getElementById('analysisChart').getContext('2d').clearRect(0, 0, 400, 200);
+                const chartTitle = document.getElementById('chart-title');
+                chartTitle.textContent = 'グラフの表示でエラーが発生しました';
                 showStatus('グラフの表示でエラーが発生しました。データを確認してください。', 'error');
             }
         }
