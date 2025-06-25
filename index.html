@@ -478,7 +478,7 @@
     <div class="container">
         <div class="header">
             <h1>💪 俺の大会までの道のり</h1>
-            <p>Ver1.34 [安定版ベース・スマホUI改善・グラフエラー修正]</p>
+            <p>Ver1.35 [安定版ベース・スマホUI改善・横スクロールグラフ対応]</p>
         </div>
 
         <div class="tabs">
@@ -1191,7 +1191,7 @@
             }
         }
 
-        // 分析グラフ描画（改良版 - エラー対策強化）
+        // 分析グラフ描画（スマホ横スクロール対応版）
         function drawAnalysisChart() {
             // Chart.js使用可能性チェック
             if (typeof Chart === 'undefined') {
@@ -1223,6 +1223,8 @@
                     console.error('Canvas context取得に失敗');
                     return;
                 }
+
+                const isMobile = window.innerWidth <= 768;
 
                 // データチェック
                 if (dailyData.length === 0) {
@@ -1311,23 +1313,31 @@
                 const caloriesMin = validCalories.length > 0 ? Math.max(0, Math.min(...validCalories) - 100) : 0;
                 const caloriesMax = validCalories.length > 0 ? Math.max(...validCalories) + 100 : 1000;
 
-                // 色分け
+                // 色分け（確実に動作させる）
                 const backgroundColors = [];
                 const borderColors = [];
                 
-                dateRange.forEach(date => {
-                    const dateStr = date.toISOString().split('T')[0];
-                    if (hasTrainingOnDate(dateStr)) {
-                        backgroundColors.push('rgba(217, 51, 63, 0.6)');
-                        borderColors.push('#d9333f');
+                for (let i = 0; i < dateRange.length; i++) {
+                    const dateStr = dateRange[i].toISOString().split('T')[0];
+                    const hasTraining = hasTrainingOnDate(dateStr);
+                    const calories = totalCaloriesData[i];
+                    
+                    if (calories && calories > 0) {
+                        if (hasTraining) {
+                            // 筋トレ実施日: 赤色
+                            backgroundColors.push('rgba(217, 51, 63, 0.8)');
+                            borderColors.push('#d9333f');
+                        } else {
+                            // ウォーキングのみ: 緑色  
+                            backgroundColors.push('rgba(16, 185, 129, 0.6)');
+                            borderColors.push('#10b981');
+                        }
                     } else {
-                        backgroundColors.push('rgba(16, 185, 129, 0.6)');
-                        borderColors.push('#10b981');
+                        // データなし: グレー
+                        backgroundColors.push('rgba(200, 200, 200, 0.3)');
+                        borderColors.push('#cccccc');
                     }
-                });
-
-                // モバイル判定
-                const isMobile = window.innerWidth <= 768;
+                }
 
                 analysisChart = new Chart(ctx, {
                     type: 'line',
@@ -1338,20 +1348,20 @@
                             data: weightData,
                             borderColor: '#ef4444',
                             backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                            borderWidth: 3,
+                            borderWidth: isMobile ? 3 : 2,
                             yAxisID: 'y',
                             tension: 0.1,
                             pointBackgroundColor: '#ef4444',
                             pointBorderColor: '#ffffff',
                             pointBorderWidth: 2,
-                            pointRadius: 5,
+                            pointRadius: isMobile ? 5 : 4,
                             spanGaps: true
                         }, {
                             label: '予測（最重量）',
                             data: predictionData,
                             borderColor: '#ef4444',
                             backgroundColor: 'transparent',
-                            borderWidth: 2,
+                            borderWidth: isMobile ? 2 : 1,
                             borderDash: [5, 5],
                             yAxisID: 'y',
                             tension: 0,
@@ -1368,18 +1378,29 @@
                         }]
                     },
                     options: {
-                        responsive: true,
-                        maintainAspectRatio: window.innerWidth > 768,
-                        aspectRatio: window.innerWidth > 768 ? 4/3 : undefined,
+                        responsive: isMobile ? false : true, // PCは元の設定、スマホのみ無効化
+                        maintainAspectRatio: isMobile ? false : true, // PCは4:3維持
+                        aspectRatio: isMobile ? undefined : 4/3, // PCのみ4:3比率
                         interaction: {
                             mode: 'index',
                             intersect: false
                         },
                         plugins: {
                             legend: {
-                                position: 'top'
+                                position: 'top',
+                                labels: {
+                                    font: {
+                                        size: isMobile ? 12 : 11
+                                    }
+                                }
                             },
                             tooltip: {
+                                titleFont: {
+                                    size: isMobile ? 12 : 11
+                                },
+                                bodyFont: {
+                                    size: isMobile ? 11 : 10
+                                },
                                 callbacks: {
                                     afterBody: function(context) {
                                         const dataIndex = context[0].dataIndex;
@@ -1407,7 +1428,15 @@
                                 display: true,
                                 title: {
                                     display: true,
-                                    text: '日付'
+                                    text: '日付',
+                                    font: {
+                                        size: isMobile ? 12 : 11
+                                    }
+                                },
+                                ticks: {
+                                    font: {
+                                        size: isMobile ? 10 : 9
+                                    }
                                 }
                             },
                             y: {
@@ -1416,7 +1445,15 @@
                                 position: 'left',
                                 title: {
                                     display: true,
-                                    text: '体重 (kg)'
+                                    text: '体重 (kg)',
+                                    font: {
+                                        size: isMobile ? 12 : 11
+                                    }
+                                },
+                                ticks: {
+                                    font: {
+                                        size: isMobile ? 10 : 9
+                                    }
                                 },
                                 min: weightMin,
                                 max: weightMax
@@ -1427,7 +1464,15 @@
                                 position: 'right',
                                 title: {
                                     display: true,
-                                    text: '消費カロリー (kcal)'
+                                    text: '消費カロリー (kcal)',
+                                    font: {
+                                        size: isMobile ? 12 : 11
+                                    }
+                                },
+                                ticks: {
+                                    font: {
+                                        size: isMobile ? 10 : 9
+                                    }
                                 },
                                 grid: {
                                     drawOnChartArea: false
@@ -1438,6 +1483,33 @@
                         }
                     }
                 });
+                
+                // スマホでのみキャンバスサイズを直接変更（横スクロール対応）
+                if (isMobile) {
+                    const canvas = analysisChart.canvas;
+                    const targetHeight = Math.min(Math.max(window.innerHeight * 0.6, 480), 600);
+                    const targetWidth = 2400; // 強制的に大きな幅を設定
+                    
+                    // キャンバスサイズを強制設定
+                    canvas.style.height = targetHeight + 'px';
+                    canvas.style.width = targetWidth + 'px';
+                    canvas.width = targetWidth;
+                    canvas.height = targetHeight;
+                    
+                    // Chart.jsの内部サイズも強制変更
+                    analysisChart.canvas.parentNode.style.position = 'relative';
+                    analysisChart.canvas.parentNode.style.height = targetHeight + 'px';
+                    analysisChart.canvas.parentNode.style.width = targetWidth + 'px';
+                    
+                    // 親コンテナのスクロール設定
+                    const chartWrapper = canvas.parentElement;
+                    chartWrapper.style.overflowX = 'scroll'; // 強制スクロール
+                    chartWrapper.style.width = '100%';
+                    chartWrapper.style.height = targetHeight + 'px';
+                    
+                    // Chart.jsに変更を反映
+                    analysisChart.resize(targetWidth, targetHeight);
+                }
                 
             } catch (error) {
                 console.error('グラフの描画でエラーが発生しました:', error);
