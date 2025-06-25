@@ -717,7 +717,7 @@
     <div class="container">
         <div class="header">
             <h1>💪 俺の大会までの道のり</h1>
-            <p>Ver1.31 [目標設定機能追加 - プログレスバー2本・Clear表示]</p>
+            <p>Ver1.33 [目標設定API完成 - Supabase連携・PC⇔スマホ同期]</p>
         </div>
 
         <div class="tabs">
@@ -1182,8 +1182,11 @@
             }
 
             // 現在の体重を取得（最新の記録）
-            const latestWeight = dailyData.length > 0 ? 
-                dailyData.sort((a, b) => new Date(b.date) - new Date(a.date))[0].weight : null;
+            let latestWeight = null;
+            if (dailyData.length > 0) {
+                const sortedData = [...dailyData].sort((a, b) => new Date(b.date) - new Date(a.date));
+                latestWeight = sortedData[0].weight;
+            }
 
             if (!latestWeight) {
                 showStatus('まず体重データを入力してください', 'error');
@@ -1220,12 +1223,29 @@
         }
 
         // 目標再設定
-        function resetGoal() {
+        async function resetGoal() {
             if (confirm('目標をリセットしますか？')) {
-                document.getElementById('goal-input').style.display = 'block';
-                document.getElementById('goal-display').classList.remove('active');
-                document.getElementById('target-weight').value = '';
-                targetGoal = null;
+                try {
+                    const response = await fetch(`${API_BASE}/delete-goal-data`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+
+                    if (response.ok) {
+                        document.getElementById('goal-input').style.display = 'block';
+                        document.getElementById('goal-display').classList.remove('active');
+                        document.getElementById('target-weight').value = '';
+                        targetGoal = null;
+                        showStatus('目標をリセットしました');
+                    } else {
+                        throw new Error('目標削除に失敗しました');
+                    }
+                } catch (error) {
+                    console.error('目標削除エラー:', error);
+                    showStatus('目標削除に失敗しました', 'error');
+                }
             }
         }
 
@@ -1240,7 +1260,8 @@
             if (!targetGoal || dailyData.length === 0) return;
 
             // 現在の体重（最新記録）
-            const currentWeight = dailyData.sort((a, b) => new Date(b.date) - new Date(a.date))[0].weight;
+            const sortedData = [...dailyData].sort((a, b) => new Date(b.date) - new Date(a.date));
+            const currentWeight = sortedData[0].weight;
             
             // 日数計算
             const today = new Date();
@@ -1257,9 +1278,9 @@
             const dailyTarget = remainingWeight > 0 ? (remainingWeight / Math.max(1, remainingDays)).toFixed(3) : 0;
             
             // 進捗率計算
-            const daysProgress = Math.min(100, (elapsedDays / totalDays) * 100);
-            const weightProgress = totalWeightToLose > 0 ? Math.min(100, (currentWeightLoss / totalWeightToLose) * 100) : 0;
-            const isCompleted = weightProgress >= 100;
+            const daysProgress = Math.min(100, Math.max(0, (elapsedDays / totalDays) * 100));
+            const weightProgress = totalWeightToLose > 0 ? Math.max(0, (currentWeightLoss / totalWeightToLose) * 100) : 0;
+            const isCompleted = currentWeight <= targetGoal.targetWeight;
 
             // 表示更新
             document.getElementById('goal-title').textContent = `🎯 目標: ${targetGoal.targetWeight}kg`;
@@ -1283,7 +1304,7 @@
                 document.getElementById('weight-progress-label').textContent = '⚖️ 減量進捗';
                 document.getElementById('weight-progress-text').textContent = `${Math.round(weightProgress)}%`;
                 document.getElementById('weight-progress-bar').classList.remove('completed');
-                document.getElementById('weight-progress-bar').style.width = `${weightProgress}%`;
+                document.getElementById('weight-progress-bar').style.width = `${Math.min(100, weightProgress)}%`;
                 document.getElementById('clear-achievement').style.display = 'none';
             }
         }
