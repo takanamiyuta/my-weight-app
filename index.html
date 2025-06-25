@@ -171,19 +171,39 @@
             border-radius: 10px;
             overflow: hidden;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            overflow-x: auto;
+            display: block;
+            white-space: nowrap;
+        }
+
+        .data-table thead,
+        .data-table tbody {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+        }
+
+        .data-table thead {
+            width: calc(100% - 1em);
         }
 
         .data-table th,
         .data-table td {
-            padding: 12px;
+            padding: 8px 4px;
             text-align: left;
             border-bottom: 1px solid #e5e7eb;
+            font-size: 0.9rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .data-table th {
             background: #f8fafc;
             font-weight: 600;
             color: #374151;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         .data-table tr:hover {
@@ -216,6 +236,7 @@
             border-radius: 15px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
             margin-bottom: 30px;
+            overflow: hidden;
         }
 
         .chart-container h3 {
@@ -223,6 +244,12 @@
             margin-bottom: 20px;
             font-size: 1.3rem;
             font-weight: 600;
+        }
+
+        .chart-container canvas {
+            max-width: 100%;
+            height: auto !important;
+            max-height: 400px;
         }
 
         .status-message {
@@ -281,6 +308,35 @@
 
             .form-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .data-table {
+                font-size: 0.8rem;
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 6px 3px;
+                min-width: 80px;
+            }
+
+            .chart-container {
+                padding: 15px;
+                overflow: hidden;
+            }
+
+            .chart-container canvas {
+                max-height: 300px !important;
+                width: 100% !important;
+            }
+
+            #analysisChart {
+                max-height: 300px !important;
+                width: 100% !important;
             }
         }
     </style>
@@ -707,11 +763,47 @@
         }
 
         function calculateTrainingCalories(date) {
-            // その日のトレーニングボリュームから消費カロリーを概算
+            // その日のトレーニングデータから消費カロリーを計算
             const dayTraining = trainingData.filter(t => t.date === date);
-            const totalVolume = dayTraining.reduce((sum, t) => sum + (t.trainingVolume || 0), 0);
-            // トレーニングボリューム1あたり約0.005kcal
-            return Math.round(totalVolume * 0.005);
+            let totalCalories = 0;
+            
+            dayTraining.forEach(training => {
+                const calories = calculateExerciseCalories(training.exercise, training.weight, training.reps, training.sets);
+                totalCalories += calories;
+            });
+            
+            return Math.round(totalCalories);
+        }
+
+        // 筋力トレーニング種目別消費カロリー計算
+        function calculateExerciseCalories(exercise, weight, reps, sets) {
+            // 体重75kgの男性を基準とした消費カロリー計算
+            const baseWeight = 75; // kg
+            const exerciseMultipliers = {
+                'ベンチプレス': 0.8,
+                'ペックフライ': 0.6,
+                'ディップス': 0.9,
+                'デクラインプレス': 0.7,
+                'ラットプルダウン': 0.7,
+                'DYローイング': 0.8,
+                'Tバーローイング': 0.8,
+                'チンニング': 1.0,
+                'マシンショルダープレス': 0.6,
+                'ダンベルサイドレイズ': 0.5,
+                'ダンベルリアレイズ': 0.5,
+                'インクラインダンベルカール': 0.4,
+                'デッドリフト': 1.2,
+                'スクワット': 1.1,
+                'ハックスクワット': 1.0,
+                '45度レッグプレス': 0.9
+            };
+
+            const multiplier = exerciseMultipliers[exercise] || 0.6;
+            
+            // 基本消費カロリー = (重量 / 体重) × レップ数 × セット数 × 種目係数 × 基礎代謝係数
+            const baseCalories = (weight / baseWeight) * reps * sets * multiplier * 0.8;
+            
+            return Math.max(1, Math.round(baseCalories)); // 最低1kcal
         }
 
         // 日次データテーブル更新
@@ -887,142 +979,180 @@
                 }
             });
 
-            // 体重予測線の計算
-            const validWeights = weightData.filter(w => w !== null);
-            const avgCalories = caloriesData.filter(c => c !== null).reduce((sum, c) => sum + c, 0) / caloriesData.filter(c => c !== null).length || 0;
-            
+            // 体重予測線の計算（安全な計算）
             let predictionData = [];
-            if (validWeights.length > 0) {
+            const validWeights = weightData.filter(w => w !== null && !isNaN(w));
+            
+            if (validWeights.length >= 2) {
                 const firstWeight = validWeights[0];
                 const lastWeight = validWeights[validWeights.length - 1];
-                const trend = (lastWeight - firstWeight) / validWeights.length;
+                const dataPoints = validWeights.length;
                 
-                predictionData = weightData.map((w, index) => {
-                    if (w !== null) return w;
-                    return firstWeight + (trend * index);
-                });
+                // 安全な傾向計算
+                const trend = dataPoints > 1 ? (lastWeight - firstWeight) / (dataPoints - 1) : 0;
+                
+                // 予測体重を計算（10月18日時点）
+                const endDateIndex = labels.length - 1;
+                const predictedWeight = firstWeight + (trend * endDateIndex);
+                
+                // 予測線データを作成（開始点と終了点のみ）
+                predictionData = new Array(labels.length).fill(null);
+                if (validWeights.length > 0) {
+                    predictionData[0] = firstWeight;
+                    predictionData[endDateIndex] = Math.max(40, Math.min(200, predictedWeight)); // 40-200kgの範囲に制限
+                }
             }
 
-            analysisChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: '体重 (kg)',
-                        data: weightData,
-                        borderColor: '#ef4444',
-                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                        borderWidth: 3,
-                        yAxisID: 'y',
-                        tension: 0.1,
-                        pointBackgroundColor: '#ef4444',
-                        pointBorderColor: '#ffffff',
-                        pointBorderWidth: 2,
-                        pointRadius: 5
-                    }, {
-                        label: '体重予測線',
-                        data: predictionData,
-                        borderColor: '#ef4444',
-                        backgroundColor: 'transparent',
-                        borderWidth: 2,
-                        borderDash: [5, 5],
-                        yAxisID: 'y',
-                        tension: 0.1,
-                        pointRadius: 0
-                    }, {
-                        label: '摂取カロリー (kcal)',
-                        data: caloriesData,
-                        borderColor: '#f59e0b',
-                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                        borderWidth: 2,
-                        yAxisID: 'y',
-                        tension: 0.1,
-                        pointBackgroundColor: '#f59e0b',
-                        pointRadius: 3
-                    }, {
-                        label: '歩数',
-                        data: stepsData,
-                        type: 'bar',
-                        backgroundColor: 'rgba(59, 130, 246, 0.6)',
-                        borderColor: '#3b82f6',
-                        borderWidth: 1,
-                        yAxisID: 'y1'
-                    }, {
-                        label: '筋トレ消費カロリー (kcal)',
-                        data: trainingCaloriesData,
-                        borderColor: '#10b981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        borderWidth: 2,
-                        yAxisID: 'y1',
-                        tension: 0.1,
-                        pointBackgroundColor: '#10b981',
-                        pointRadius: 3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false,
+            try {
+                analysisChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: '体重 (kg)',
+                            data: weightData,
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            borderWidth: 3,
+                            yAxisID: 'y',
+                            tension: 0.1,
+                            pointBackgroundColor: '#ef4444',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            spanGaps: true
+                        }, {
+                            label: '体重予測線',
+                            data: predictionData,
+                            borderColor: '#ef4444',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            yAxisID: 'y',
+                            tension: 0,
+                            pointRadius: 0,
+                            spanGaps: true
+                        }, {
+                            label: '摂取カロリー (kcal)',
+                            data: caloriesData,
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            borderWidth: 2,
+                            yAxisID: 'y',
+                            tension: 0.1,
+                            pointBackgroundColor: '#f59e0b',
+                            pointRadius: 3,
+                            spanGaps: true
+                        }, {
+                            label: '歩数',
+                            data: stepsData,
+                            type: 'bar',
+                            backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                            borderColor: '#3b82f6',
+                            borderWidth: 1,
+                            yAxisID: 'y1'
+                        }, {
+                            label: '筋トレ消費カロリー (kcal)',
+                            data: trainingCaloriesData,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            borderWidth: 2,
+                            yAxisID: 'y1',
+                            tension: 0.1,
+                            pointBackgroundColor: '#10b981',
+                            pointRadius: 3,
+                            spanGaps: true
+                        }]
                     },
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: '体重・カロリー・運動データの推移',
-                            font: {
-                                size: 16,
-                                weight: 'bold'
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: '体重・カロリー・運動データの推移',
+                                font: {
+                                    size: 16,
+                                    weight: 'bold'
+                                }
+                            },
+                            legend: {
+                                position: 'top'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    afterBody: function(context) {
+                                        const dataIndex = context[0].dataIndex;
+                                        const event = eventData[dataIndex];
+                                        if (event && context[0].datasetIndex === 0) {
+                                            return `イベント: ${event}`;
+                                        }
+                                        // 予測線の場合
+                                        if (context[0].datasetIndex === 1 && dataIndex === labels.length - 1) {
+                                            return '10月18日の予測体重';
+                                        }
+                                        return '';
+                                    }
+                                }
                             }
                         },
-                        legend: {
-                            position: 'top'
-                        },
-                        tooltip: {
-                            callbacks: {
-                                afterBody: function(context) {
-                                    const dataIndex = context[0].dataIndex;
-                                    const event = eventData[dataIndex];
-                                    if (event && context[0].datasetIndex === 0) {
-                                        return `イベント: ${event}`;
-                                    }
-                                    return '';
+                        scales: {
+                            x: {
+                                display: true,
+                                title: {
+                                    display: true,
+                                    text: '日付'
+                                }
+                            },
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                title: {
+                                    display: true,
+                                    text: '体重 (kg) / カロリー (kcal)'
+                                },
+                                min: function(context) {
+                                    const weights = weightData.filter(w => w !== null);
+                                    return weights.length > 0 ? Math.max(40, Math.min(...weights) - 5) : 40;
+                                },
+                                max: function(context) {
+                                    const weights = weightData.filter(w => w !== null);
+                                    const calories = caloriesData.filter(c => c !== null);
+                                    const maxWeight = weights.length > 0 ? Math.max(...weights) : 100;
+                                    const maxCalories = calories.length > 0 ? Math.max(...calories) : 3000;
+                                    return Math.min(200, Math.max(maxWeight + 5, maxCalories + 500));
+                                }
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                title: {
+                                    display: true,
+                                    text: '歩数 / 消費カロリー (kcal)'
+                                },
+                                grid: {
+                                    drawOnChartArea: false,
+                                },
+                                max: function(context) {
+                                    const steps = stepsData.filter(s => s !== null);
+                                    const maxSteps = steps.length > 0 ? Math.max(...steps) : 15000;
+                                    return Math.min(50000, maxSteps + 5000);
                                 }
                             }
                         }
-                    },
-                    scales: {
-                        x: {
-                            display: true,
-                            title: {
-                                display: true,
-                                text: '日付'
-                            }
-                        },
-                        y: {
-                            type: 'linear',
-                            display: true,
-                            position: 'left',
-                            title: {
-                                display: true,
-                                text: '体重 (kg) / カロリー (kcal)'
-                            }
-                        },
-                        y1: {
-                            type: 'linear',
-                            display: true,
-                            position: 'right',
-                            title: {
-                                display: true,
-                                text: '歩数 / 消費カロリー (kcal)'
-                            },
-                            grid: {
-                                drawOnChartArea: false,
-                            },
-                        }
                     }
-                }
-            });
+                });
+            } catch (error) {
+                console.error('グラフの描画でエラーが発生しました:', error);
+                document.getElementById('analysisChart').getContext('2d').clearRect(0, 0, 400, 200);
+                showStatus('グラフの表示でエラーが発生しました。データを確認してください。', 'error');
+            }
         }
 
         // CSVエクスポート機能
