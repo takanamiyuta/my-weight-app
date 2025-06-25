@@ -450,7 +450,7 @@
     <div class="container">
         <div class="header">
             <h1>💪 俺の大会までの道のり</h1>
-            <p>Ver1.21 [スマホ横スクロール対応・筋トレ日色分け修正]</p>
+            <p>Ver1.22 [スマホ横スクロール完全実装・6月表示最適化]</p>
         </div>
 
         <div class="tabs">
@@ -1428,12 +1428,21 @@
                     const canvas = analysisChart.canvas;
                     const rect = canvas.getBoundingClientRect();
                     const targetHeight = Math.min(Math.max(window.innerHeight * 0.6, 480), 600);
-                    const targetWidth = 1200; // 横スクロール用の幅
+                    
+                    // 全期間を表示するのに必要な幅を計算
+                    const totalDays = dateRange.length;
+                    const dayWidth = 15; // 1日あたりの幅
+                    const targetWidth = Math.max(totalDays * dayWidth, 1800); // 最小1800px
                     
                     canvas.style.height = targetHeight + 'px';
                     canvas.style.width = targetWidth + 'px';
                     canvas.height = targetHeight;
                     canvas.width = targetWidth;
+                    
+                    // コンテナにoverflow設定を確実に適用
+                    const chartWrapper = canvas.parentElement;
+                    chartWrapper.style.overflowX = 'auto';
+                    chartWrapper.style.width = '100%';
                     
                     analysisChart.resize();
                 }
