@@ -33,7 +33,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 20px;
+            padding: 10px;
         }
 
         .container {
@@ -75,6 +75,10 @@
             color: #64748b;
             transition: all 0.3s ease;
             position: relative;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .tab.active {
@@ -145,6 +149,7 @@
             font-weight: 600;
             color: #374151;
             margin-bottom: 8px;
+            font-size: 0.95rem;
         }
 
         .form-group input,
@@ -154,12 +159,25 @@
             border-radius: 8px;
             font-size: 1rem;
             transition: border-color 0.3s ease;
+            min-height: 48px;
         }
 
         .form-group input:focus,
         .form-group select:focus {
             outline: none;
             border-color: #4f46e5;
+        }
+
+        /* 数値入力フィールドの最適化 */
+        .form-group input[type="number"] {
+            appearance: textfield;
+            -moz-appearance: textfield;
+        }
+        
+        .form-group input[type="number"]::-webkit-outer-spin-button,
+        .form-group input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
 
         .btn {
@@ -173,6 +191,8 @@
             cursor: pointer;
             transition: all 0.3s ease;
             margin-right: 10px;
+            min-height: 48px;
+            min-width: 100px;
         }
 
         .btn:hover {
@@ -186,6 +206,13 @@
 
         .btn-secondary:hover {
             box-shadow: 0 10px 20px rgba(107, 114, 128, 0.3);
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            min-height: 36px;
+            min-width: 70px;
         }
 
         .data-table {
@@ -258,39 +285,10 @@
             font-weight: 600;
         }
 
-        .text-chart {
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            line-height: 1.2;
-            background: #f8fafc;
-            padding: 20px;
-            border-radius: 10px;
-            overflow-x: auto;
-            white-space: pre;
-            color: #374151;
-            border: 1px solid #e2e8f0;
-        }
-
-        .chart-legend {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-bottom: 15px;
-            font-size: 14px;
-            font-weight: 600;
-            flex-wrap: wrap;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .legend-color {
-            width: 16px;
-            height: 16px;
-            border-radius: 2px;
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+            width: 100%;
         }
 
         .table-container {
@@ -324,6 +322,13 @@
             margin-top: 20px;
         }
 
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
         .mobile-header {
             display: none;
         }
@@ -332,18 +337,23 @@
             display: table-row;
         }
 
+        /* スマートフォン最適化 */
         @media (max-width: 768px) {
+            body {
+                padding: 5px;
+            }
+
             .container {
-                margin: 10px;
-                border-radius: 15px;
+                margin: 0;
+                border-radius: 10px;
             }
 
             .header {
-                padding: 20px;
+                padding: 15px;
             }
 
             .header h1 {
-                font-size: 2rem;
+                font-size: 1.8rem;
             }
 
             .tabs {
@@ -351,8 +361,9 @@
             }
 
             .tab {
-                padding: 15px 5px;
-                font-size: 1.5rem;
+                padding: 10px 5px;
+                font-size: 1.2rem;
+                min-height: 50px;
             }
 
             .tab .desktop-text {
@@ -361,6 +372,7 @@
 
             .tab .mobile-text {
                 display: inline;
+                font-size: 1.5rem;
             }
 
             .tab-content {
@@ -369,11 +381,63 @@
 
             .form-grid {
                 grid-template-columns: 1fr;
+                gap: 15px;
             }
 
             .form-section {
-                padding: 20px;
-                margin-bottom: 20px;
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+
+            .form-section h3 {
+                font-size: 1.1rem;
+                margin-bottom: 15px;
+            }
+
+            .form-group label {
+                font-size: 0.9rem;
+                margin-bottom: 6px;
+            }
+
+            .form-group input,
+            .form-group select {
+                padding: 10px;
+                font-size: 16px; /* iOS zoom prevention */
+                min-height: 44px;
+            }
+
+            /* 特定の入力フィールドの幅制限 */
+            .form-group input[type="number"] {
+                max-width: 150px;
+            }
+
+            .form-group input[type="date"] {
+                max-width: 200px;
+            }
+
+            .form-group select {
+                max-width: 200px;
+            }
+
+            .button-group {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .btn {
+                padding: 12px 20px;
+                font-size: 0.95rem;
+                margin-right: 0;
+                width: 100%;
+                min-height: 48px;
+            }
+
+            .btn-small {
+                padding: 8px 12px;
+                font-size: 0.8rem;
+                min-height: 40px;
+                width: auto;
+                margin: 2px;
             }
 
             .table-container {
@@ -386,18 +450,19 @@
             .data-table {
                 min-width: 900px;
                 font-size: 0.8rem;
+                border-radius: 0;
             }
 
             .data-table th,
             .data-table td {
                 padding: 8px 6px;
-                min-width: 90px;
+                min-width: 80px;
                 font-size: 0.75rem;
             }
 
             .data-table th:last-child,
             .data-table td:last-child {
-                min-width: 120px;
+                min-width: 140px;
             }
 
             .mobile-header {
@@ -410,38 +475,73 @@
 
             .chart-container {
                 padding: 15px;
-                margin: 0 -15px 20px -15px;
+                margin: 0 -15px 15px -15px;
                 border-radius: 0;
             }
 
-            .text-chart {
-                font-size: 10px;
-                line-height: 1.1;
-                padding: 10px;
+            .chart-container h3 {
+                font-size: 1rem;
+                margin-bottom: 15px;
+                line-height: 1.3;
             }
 
-            .chart-legend {
-                font-size: 12px;
-                gap: 10px;
+            .chart-wrapper {
+                height: 480px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .export-section {
+                padding: 15px;
+                margin-top: 15px;
+            }
+
+            .export-section h3 {
+                font-size: 1.1rem;
                 margin-bottom: 10px;
             }
 
-            .btn {
-                padding: 6px 10px;
-                font-size: 0.75rem;
-                margin: 2px;
-                white-space: nowrap;
+            .export-section p {
+                font-size: 0.9rem;
+                line-height: 1.4;
             }
 
-            .table-container::-webkit-scrollbar {
+            /* スクロールバーの改善 */
+            .table-container::-webkit-scrollbar,
+            .chart-wrapper::-webkit-scrollbar {
                 height: 8px;
                 background: #f1f5f9;
             }
 
-            .table-container::-webkit-scrollbar-thumb {
+            .table-container::-webkit-scrollbar-thumb,
+            .chart-wrapper::-webkit-scrollbar-thumb {
                 background: #3b82f6;
                 border-radius: 4px;
                 border: 1px solid #f1f5f9;
+            }
+        }
+
+        /* 極小画面（320px以下）の追加対応 */
+        @media (max-width: 320px) {
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .tab {
+                padding: 8px 3px;
+                font-size: 1rem;
+            }
+
+            .tab .mobile-text {
+                font-size: 1.3rem;
+            }
+
+            .form-section {
+                padding: 12px;
+            }
+
+            .chart-wrapper {
+                height: 250px;
             }
         }
     </style>
@@ -450,7 +550,7 @@
     <div class="container">
         <div class="header">
             <h1>💪 俺の大会までの道のり</h1>
-            <p>Ver1.25 [PC専用グラフ高さ70%調整・完成版]</p>
+            <p>Ver1.3 [スマホ最適化版]</p>
         </div>
 
         <div class="tabs">
@@ -486,23 +586,25 @@
                         </div>
                         <div class="form-group">
                             <label for="weight">体重 (kg)</label>
-                            <input type="number" id="weight" step="0.1" required>
+                            <input type="number" id="weight" step="0.1" min="40" max="150" required placeholder="例: 70.5">
                         </div>
                         <div class="form-group">
                             <label for="calories">摂取カロリー (kcal)</label>
-                            <input type="number" id="calories" required>
+                            <input type="number" id="calories" min="800" max="5000" required placeholder="例: 2000">
                         </div>
                         <div class="form-group">
                             <label for="steps">歩数</label>
-                            <input type="number" id="steps" required>
+                            <input type="number" id="steps" min="0" max="50000" required placeholder="例: 8000">
                         </div>
                         <div class="form-group">
                             <label for="event">イベント</label>
-                            <input type="text" id="event" placeholder="例: 会食、体調不良、チートデイ">
+                            <input type="text" id="event" maxlength="50" placeholder="例: 会食、体調不良、チートデイ">
                         </div>
                     </div>
-                    <button type="submit" class="btn">データ保存</button>
-                    <button type="button" class="btn btn-secondary" onclick="clearDailyForm()">クリア</button>
+                    <div class="button-group">
+                        <button type="submit" class="btn">データ保存</button>
+                        <button type="button" class="btn btn-secondary" onclick="clearDailyForm()">クリア</button>
+                    </div>
                 </form>
             </div>
 
@@ -576,7 +678,7 @@
                         </div>
                         <div class="form-group">
                             <label for="training-weight">重量 (kg)</label>
-                            <input type="number" id="training-weight" step="0.5" required>
+                            <input type="number" id="training-weight" step="0.5" min="1" max="300" required placeholder="例: 80.0">
                         </div>
                         <div class="form-group">
                             <label for="reps">回数</label>
@@ -631,8 +733,10 @@
                             </select>
                         </div>
                     </div>
-                    <button type="submit" class="btn">トレーニング記録保存</button>
-                    <button type="button" class="btn btn-secondary" onclick="clearTrainingForm()">クリア</button>
+                    <div class="button-group">
+                        <button type="submit" class="btn">トレーニング記録保存</button>
+                        <button type="button" class="btn btn-secondary" onclick="clearTrainingForm()">クリア</button>
+                    </div>
                 </form>
             </div>
 
@@ -685,7 +789,7 @@
             <div class="export-section">
                 <h3>📤 データエクスポート</h3>
                 <p>データをCSV形式でエクスポートして、Excelで開くことができます。</p>
-                <div style="margin-top: 20px;">
+                <div class="button-group">
                     <button class="btn" onclick="exportDailyData()">日次データをエクスポート</button>
                     <button class="btn" onclick="exportTrainingData()">トレーニングデータをエクスポート</button>
                     <button class="btn" onclick="exportAllData()">全データをエクスポート</button>
@@ -716,12 +820,48 @@
             loadAllData();
             setupDateDefaults();
             setupEventListeners();
+            setupInputValidation();
         });
 
         // イベントリスナーの設定
         function setupEventListeners() {
             document.getElementById('daily-form').addEventListener('submit', handleDailySubmit);
             document.getElementById('training-form').addEventListener('submit', handleTrainingSubmit);
+        }
+
+        // 入力値検証の設定
+        function setupInputValidation() {
+            // 体重入力の検証
+            const weightInput = document.getElementById('weight');
+            weightInput.addEventListener('input', function() {
+                const value = parseFloat(this.value);
+                if (value < 40) this.value = 40;
+                if (value > 150) this.value = 150;
+            });
+
+            // カロリー入力の検証
+            const caloriesInput = document.getElementById('calories');
+            caloriesInput.addEventListener('input', function() {
+                const value = parseInt(this.value);
+                if (value < 800) this.value = 800;
+                if (value > 5000) this.value = 5000;
+            });
+
+            // 歩数入力の検証
+            const stepsInput = document.getElementById('steps');
+            stepsInput.addEventListener('input', function() {
+                const value = parseInt(this.value);
+                if (value < 0) this.value = 0;
+                if (value > 50000) this.value = 50000;
+            });
+
+            // トレーニング重量の検証
+            const trainingWeightInput = document.getElementById('training-weight');
+            trainingWeightInput.addEventListener('input', function() {
+                const value = parseFloat(this.value);
+                if (value < 1) this.value = 1;
+                if (value > 300) this.value = 300;
+            });
         }
 
         // デフォルト日付の設定
@@ -794,6 +934,20 @@
                 event: document.getElementById('event').value
             };
 
+            // 入力値の再検証
+            if (formData.weight < 40 || formData.weight > 150) {
+                showStatus('体重は40kg〜150kgの範囲で入力してください', 'error');
+                return;
+            }
+            if (formData.calories < 800 || formData.calories > 5000) {
+                showStatus('摂取カロリーは800〜5000kcalの範囲で入力してください', 'error');
+                return;
+            }
+            if (formData.steps < 0 || formData.steps > 50000) {
+                showStatus('歩数は0〜50000歩の範囲で入力してください', 'error');
+                return;
+            }
+
             try {
                 const response = await fetch(`${API_BASE}/save-daily-data`, {
                     method: 'POST',
@@ -825,6 +979,12 @@
             const reps = parseInt(document.getElementById('reps').value);
             const sets = parseInt(document.getElementById('sets').value);
             const exercise = document.getElementById('exercise').value;
+
+            // 入力値の再検証
+            if (weight < 1 || weight > 300) {
+                showStatus('重量は1kg〜300kgの範囲で入力してください', 'error');
+                return;
+            }
             
             const formData = {
                 date: document.getElementById('training-date').value,
@@ -1043,8 +1203,8 @@
                     <td>${trainingCalories}</td>
                     <td>${item.event || '-'}</td>
                     <td>
-                        <button class="btn" onclick="editDailyData('${item.date}')" style="padding: 4px 8px; font-size: 0.7rem; margin-right: 3px;">編集</button>
-                        <button class="btn" onclick="deleteDailyData('${item.date}')" style="padding: 4px 8px; font-size: 0.7rem;">削除</button>
+                        <button class="btn btn-small" onclick="editDailyData('${item.date}')">編集</button>
+                        <button class="btn btn-small" onclick="deleteDailyData('${item.date}')">削除</button>
                     </td>
                 `;
                 tbody.appendChild(row);
@@ -1071,8 +1231,8 @@
                     <td>${item.bodyPart || getBodyPart(item.exercise)}</td>
                     <td>${item.intensity || calculateIntensity(item.weight, item.reps, item.sets)}</td>
                     <td>
-                        <button class="btn" onclick="editTrainingData(${index})" style="padding: 4px 8px; font-size: 0.7rem; margin-right: 3px;">編集</button>
-                        <button class="btn" onclick="deleteTrainingData(${index})" style="padding: 4px 8px; font-size: 0.7rem;">削除</button>
+                        <button class="btn btn-small" onclick="editTrainingData(${index})">編集</button>
+                        <button class="btn btn-small" onclick="deleteTrainingData(${index})">削除</button>
                     </td>
                 `;
                 tbody.appendChild(row);
@@ -1159,7 +1319,7 @@
             }
         }
 
-        // Chart.jsグラフ描画（文字つぶれ修正版）
+        // Chart.jsグラフ描画（スマホ最適化版）
         function drawAnalysisChart() {
             const ctx = document.getElementById('analysisChart').getContext('2d');
             const isMobile = window.innerWidth <= 768;
@@ -1235,7 +1395,7 @@
             // タイトル更新
             const chartTitle = document.getElementById('chart-title');
             if (weightPrediction.minWeight && weightPrediction.maxWeight) {
-                chartTitle.textContent = `大会当日は${weightPrediction.maxWeight.toFixed(1)}kg〜${weightPrediction.minWeight.toFixed(1)}kgで着地見込み！（シミュレーション：${weightPrediction.maxWeight.toFixed(1)}kg）`;
+                chartTitle.textContent = `大会当日は${weightPrediction.maxWeight.toFixed(1)}kg〜${weightPrediction.minWeight.toFixed(1)}kgで着地見込み！`;
             } else {
                 chartTitle.textContent = '大会当日は計算中...で着地見込み！';
             }
@@ -1254,7 +1414,7 @@
             const caloriesMin = validCalories.length > 0 ? Math.max(0, Math.min(...validCalories) - 100) : 0;
             const caloriesMax = validCalories.length > 0 ? Math.max(...validCalories) + 100 : 1000;
 
-            // 色分け（確実に動作させる）
+            // 色分け
             const backgroundColors = [];
             const borderColors = [];
             
@@ -1296,14 +1456,14 @@
                             pointBackgroundColor: '#ef4444',
                             pointBorderColor: '#ffffff',
                             pointBorderWidth: 2,
-                            pointRadius: isMobile ? 5 : 4,
+                            pointRadius: isMobile ? 6 : 4,
                             spanGaps: true
                         }, {
                             label: '予測（最重量）',
                             data: predictionData,
                             borderColor: '#ef4444',
                             backgroundColor: 'transparent',
-                            borderWidth: isMobile ? 2 : 1,
+                            borderWidth: isMobile ? 3 : 2,
                             borderDash: [5, 5],
                             yAxisID: 'y',
                             tension: 0,
@@ -1320,9 +1480,9 @@
                         }]
                     },
                     options: {
-                        responsive: isMobile ? false : true, // PCは元の設定、スマホのみ無効化
-                        maintainAspectRatio: isMobile ? false : true, // PCは4:3維持
-                        aspectRatio: isMobile ? undefined : 4/3, // PCのみ4:3比率
+                        responsive: isMobile ? false : true,
+                        maintainAspectRatio: isMobile ? false : true,
+                        aspectRatio: isMobile ? undefined : 4/3,
                         interaction: {
                             mode: 'index',
                             intersect: false
@@ -1332,16 +1492,18 @@
                                 position: 'top',
                                 labels: {
                                     font: {
-                                        size: isMobile ? 12 : 11
-                                    }
+                                        size: isMobile ? 10 : 12
+                                    },
+                                    boxWidth: isMobile ? 12 : 16,
+                                    padding: isMobile ? 8 : 15
                                 }
                             },
                             tooltip: {
                                 titleFont: {
-                                    size: isMobile ? 12 : 11
+                                    size: isMobile ? 11 : 12
                                 },
                                 bodyFont: {
-                                    size: isMobile ? 11 : 10
+                                    size: isMobile ? 10 : 11
                                 },
                                 callbacks: {
                                     afterBody: function(context) {
@@ -1372,12 +1534,12 @@
                                     display: true,
                                     text: '日付',
                                     font: {
-                                        size: isMobile ? 12 : 11
+                                        size: isMobile ? 10 : 12
                                     }
                                 },
                                 ticks: {
                                     font: {
-                                        size: isMobile ? 10 : 9
+                                        size: isMobile ? 8 : 10
                                     }
                                 }
                             },
@@ -1389,12 +1551,12 @@
                                     display: true,
                                     text: '体重 (kg)',
                                     font: {
-                                        size: isMobile ? 12 : 11
+                                        size: isMobile ? 10 : 12
                                     }
                                 },
                                 ticks: {
                                     font: {
-                                        size: isMobile ? 10 : 9
+                                        size: isMobile ? 9 : 10
                                     }
                                 },
                                 min: weightMin,
@@ -1408,12 +1570,12 @@
                                     display: true,
                                     text: '消費カロリー (kcal)',
                                     font: {
-                                        size: isMobile ? 12 : 11
+                                        size: isMobile ? 10 : 12
                                     }
                                 },
                                 ticks: {
                                     font: {
-                                        size: isMobile ? 10 : 9
+                                        size: isMobile ? 9 : 10
                                     }
                                 },
                                 grid: {
@@ -1540,6 +1702,17 @@
             document.body.removeChild(link);
             showStatus(`${filename} をダウンロードしました`);
         }
+
+        // ウィンドウリサイズ時のグラフ再描画
+        let resizeTimeout;
+        window.addEventListener('resize', function() {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(function() {
+                if (analysisChart && document.getElementById('analysis').classList.contains('active')) {
+                    drawAnalysisChart();
+                }
+            }, 300);
+        });
     </script>
 </body>
 </html>
