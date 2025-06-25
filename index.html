@@ -312,31 +312,39 @@
             }
 
             .tab-content {
-                padding: 20px;
+                padding: 15px; /* パディングを減らす */
             }
 
             .form-grid {
                 grid-template-columns: 1fr;
             }
 
-            /* テーブル用スクロール設定 */
+            .form-section {
+                padding: 20px; /* パディングを減らす */
+                margin-bottom: 20px;
+            }
+
+            /* テーブル専用設定 */
             .table-container {
-                margin: 0 -20px;
+                width: calc(100vw - 50px); /* 画面幅いっぱい */
+                margin-left: -20px;
+                margin-right: -20px;
                 border-radius: 0;
-                padding: 0 20px;
-                box-sizing: border-box;
+                border-left: none;
+                border-right: none;
             }
 
             .data-table {
-                min-width: 1000px; /* スマホで十分な幅を確保 */
-                font-size: 0.85rem;
+                width: 1400px; /* さらに幅を増やす */
+                font-size: 0.8rem;
             }
 
             .data-table th,
             .data-table td {
-                padding: 10px 6px;
-                min-width: 110px;
-                font-size: 0.8rem;
+                padding: 8px;
+                width: 140px; /* セル幅を統一 */
+                min-width: 140px;
+                font-size: 0.75rem;
             }
 
             .mobile-header {
@@ -347,52 +355,45 @@
                 display: none;
             }
 
-            /* グラフ用スクロール設定 */
+            /* グラフ専用設定 */
             .chart-container {
                 padding: 15px;
-                margin: 0 -20px 30px;
+                margin-bottom: 20px;
+            }
+
+            .chart-scroll-wrapper {
+                width: calc(100vw - 50px); /* 画面幅いっぱい */
+                margin-left: -15px;
+                margin-right: -15px;
                 border-radius: 0;
+                border-left: none;
+                border-right: none;
             }
 
-            .chart-scroll-container {
-                margin: 0 -15px;
-                padding: 0 15px;
-            }
-
-            .chart-wrapper {
-                width: 1800px; /* スマホでは3倍幅 */
+            .chart-inner {
+                width: 2000px; /* スマホでは超横長 */
                 height: 350px;
             }
 
             .btn {
-                padding: 8px 12px;
-                font-size: 0.8rem;
-                margin-right: 5px;
-                margin-bottom: 5px;
+                padding: 6px 10px;
+                font-size: 0.75rem;
+                margin: 2px;
                 white-space: nowrap;
             }
 
-            /* スクロールバーのスタイル調整 */
+            /* スクロールバーを見やすく */
             .table-container::-webkit-scrollbar,
-            .chart-scroll-container::-webkit-scrollbar {
-                height: 8px;
-            }
-
-            .table-container::-webkit-scrollbar-track,
-            .chart-scroll-container::-webkit-scrollbar-track {
+            .chart-scroll-wrapper::-webkit-scrollbar {
+                height: 12px;
                 background: #f1f5f9;
-                border-radius: 4px;
             }
 
             .table-container::-webkit-scrollbar-thumb,
-            .chart-scroll-container::-webkit-scrollbar-thumb {
-                background: #94a3b8;
-                border-radius: 4px;
-            }
-
-            .table-container::-webkit-scrollbar-thumb:hover,
-            .chart-scroll-container::-webkit-scrollbar-thumb:hover {
-                background: #64748b;
+            .chart-scroll-wrapper::-webkit-scrollbar-thumb {
+                background: #3b82f6;
+                border-radius: 6px;
+                border: 2px solid #f1f5f9;
             }
         }
     </style>
@@ -401,7 +402,7 @@
     <div class="container">
         <div class="header">
             <h1>💪 俺の大会までの道のり</h1>
-            <p>Ver1.05 [スクロール修正版]</p>
+            <p>Ver1.06 [強制スクロール対応]</p>
         </div>
 
         <div class="tabs">
@@ -613,8 +614,8 @@
         <div id="analysis" class="tab-content">
             <div class="chart-container">
                 <h3 id="chart-title">大会当日は計算中...で着地見込み！</h3>
-                <div class="chart-scroll-container">
-                    <div class="chart-wrapper">
+                <div class="chart-scroll-wrapper">
+                    <div class="chart-inner">
                         <canvas id="analysisChart"></canvas>
                     </div>
                 </div>
