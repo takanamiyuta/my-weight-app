@@ -81,6 +81,14 @@
             color: #475569;
         }
 
+        .tab .desktop-text {
+            display: inline;
+        }
+
+        .tab .mobile-text {
+            display: none;
+        }
+
         .tab-content {
             display: none;
             padding: 30px;
@@ -308,7 +316,20 @@
             }
 
             .tabs {
-                flex-direction: column;
+                flex-direction: row; /* 横並びに戻す */
+            }
+
+            .tab {
+                padding: 15px 5px; /* パディングを調整 */
+                font-size: 1.5rem; /* 絵文字用にサイズアップ */
+            }
+
+            .tab .desktop-text {
+                display: none; /* デスクトップテキストを非表示 */
+            }
+
+            .tab .mobile-text {
+                display: inline; /* モバイル絵文字を表示 */
             }
 
             .tab-content {
@@ -402,14 +423,26 @@
     <div class="container">
         <div class="header">
             <h1>💪 俺の大会までの道のり</h1>
-            <p>Ver1.06 [強制スクロール対応]</p>
+            <p>Ver1.07 [スマホタブ絵文字対応]</p>
         </div>
 
         <div class="tabs">
-            <button class="tab active" onclick="showTab('daily')">日次データ管理</button>
-            <button class="tab" onclick="showTab('training')">筋力トレーニング管理</button>
-            <button class="tab" onclick="showTab('analysis')">データ分析・グラフ</button>
-            <button class="tab" onclick="showTab('export')">データエクスポート</button>
+            <button class="tab active" onclick="showTab('daily')">
+                <span class="desktop-text">日次データ管理</span>
+                <span class="mobile-text">⚖️</span>
+            </button>
+            <button class="tab" onclick="showTab('training')">
+                <span class="desktop-text">筋力トレーニング管理</span>
+                <span class="mobile-text">🏋️</span>
+            </button>
+            <button class="tab" onclick="showTab('analysis')">
+                <span class="desktop-text">データ分析・グラフ</span>
+                <span class="mobile-text">📈</span>
+            </button>
+            <button class="tab" onclick="showTab('export')">
+                <span class="desktop-text">データエクスポート</span>
+                <span class="mobile-text">📤</span>
+            </button>
         </div>
 
         <div id="status-message"></div>
