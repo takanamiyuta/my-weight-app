@@ -319,18 +319,20 @@
                 grid-template-columns: 1fr;
             }
 
+            .table-container {
+                margin: 0 -20px; /* 画面端まで使用 */
+                border-radius: 0;
+            }
+
             .data-table {
-                font-size: 0.8rem;
-                display: block;
-                overflow-x: auto;
-                white-space: nowrap;
-                -webkit-overflow-scrolling: touch;
+                min-width: 900px; /* スマホでも十分な幅を確保 */
+                font-size: 0.85rem;
             }
 
             .data-table th,
             .data-table td {
-                padding: 6px 3px;
-                min-width: 80px;
+                padding: 10px 6px;
+                min-width: 90px; /* セル幅を少し広く */
             }
 
             .mobile-header {
@@ -343,26 +345,30 @@
 
             .chart-container {
                 padding: 15px;
-                overflow: hidden;
+                margin: 0 -20px; /* 画面端まで使用 */
+                border-radius: 0;
             }
 
-            .chart-container canvas {
-                max-height: 300px !important;
-                width: 100% !important;
+            .chart-wrapper {
+                min-width: 1800px; /* スマホでは3倍幅 */
+                height: 350px;
             }
 
-            #analysisChart {
-                max-height: 300px !important;
-                width: 100% !important;
+            .btn {
+                padding: 8px 12px;
+                font-size: 0.8rem;
+                margin-right: 5px;
+                margin-bottom: 5px;
+                white-space: nowrap;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
+                        <div class="header">
             <h1>💪 俺の大会までの道のり</h1>
-            <p>Ver1.03 [範囲予測&棒グラフ対応]</p>
+            <p>Ver1.04 [スマホスクロール対応]</p>
         </div>
 
         <div class="tabs">
@@ -408,35 +414,37 @@
 
             <div class="form-section">
                 <h3>📈 日次データ一覧</h3>
-                <table class="data-table" id="daily-table">
-                    <thead>
-                        <tr class="desktop-header">
-                            <th>日付</th>
-                            <th>体重 (kg)</th>
-                            <th>前日比</th>
-                            <th>摂取カロリー (kcal)</th>
-                            <th>歩数</th>
-                            <th>歩行消費カロリー</th>
-                            <th>筋トレ消費カロリー</th>
-                            <th>イベント</th>
-                            <th>操作</th>
-                        </tr>
-                        <tr class="mobile-header">
-                            <th>📅</th>
-                            <th>⚖️</th>
-                            <th>🧮</th>
-                            <th>🍚</th>
-                            <th>🚶</th>
-                            <th>🚶</th>
-                            <th>🏋️</th>
-                            <th>📝</th>
-                            <th>❌</th>
-                        </tr>
-                    </thead>
-                    <tbody id="daily-table-body">
-                        <!-- データが動的に挿入されます -->
-                    </tbody>
-                </table>
+                <div class="table-container">
+                    <table class="data-table" id="daily-table">
+                        <thead>
+                            <tr class="desktop-header">
+                                <th>日付</th>
+                                <th>体重 (kg)</th>
+                                <th>前日比</th>
+                                <th>摂取カロリー (kcal)</th>
+                                <th>歩数</th>
+                                <th>歩行消費カロリー</th>
+                                <th>筋トレ消費カロリー</th>
+                                <th>イベント</th>
+                                <th>操作</th>
+                            </tr>
+                            <tr class="mobile-header">
+                                <th>📅</th>
+                                <th>⚖️</th>
+                                <th>🧮</th>
+                                <th>🍚</th>
+                                <th>🚶</th>
+                                <th>🚶</th>
+                                <th>🏋️</th>
+                                <th>📝</th>
+                                <th>❌</th>
+                            </tr>
+                        </thead>
+                        <tbody id="daily-table-body">
+                            <!-- データが動的に挿入されます -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -536,33 +544,35 @@
 
             <div class="form-section">
                 <h3>📋 トレーニング記録一覧</h3>
-                <table class="data-table" id="training-table">
-                    <thead>
-                        <tr class="desktop-header">
-                            <th>日付</th>
-                            <th>種目</th>
-                            <th>重量 (kg)</th>
-                            <th>回数</th>
-                            <th>セット数</th>
-                            <th>推定1RM (kg)</th>
-                            <th>トレーニングボリューム</th>
-                            <th>操作</th>
-                        </tr>
-                        <tr class="mobile-header">
-                            <th>📅</th>
-                            <th>🏋️</th>
-                            <th>⚖️</th>
-                            <th>🔢</th>
-                            <th>🔢</th>
-                            <th>💪</th>
-                            <th>📊</th>
-                            <th>❌</th>
-                        </tr>
-                    </thead>
-                    <tbody id="training-table-body">
-                        <!-- データが動的に挿入されます -->
-                    </tbody>
-                </table>
+                <div class="table-container">
+                    <table class="data-table" id="training-table">
+                        <thead>
+                            <tr class="desktop-header">
+                                <th>日付</th>
+                                <th>種目</th>
+                                <th>重量 (kg)</th>
+                                <th>回数</th>
+                                <th>セット数</th>
+                                <th>推定1RM (kg)</th>
+                                <th>トレーニングボリューム</th>
+                                <th>操作</th>
+                            </tr>
+                            <tr class="mobile-header">
+                                <th>📅</th>
+                                <th>🏋️</th>
+                                <th>⚖️</th>
+                                <th>🔢</th>
+                                <th>🔢</th>
+                                <th>💪</th>
+                                <th>📊</th>
+                                <th>❌</th>
+                            </tr>
+                        </thead>
+                        <tbody id="training-table-body">
+                            <!-- データが動的に挿入されます -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -570,7 +580,9 @@
         <div id="analysis" class="tab-content">
             <div class="chart-container">
                 <h3 id="chart-title">大会当日は計算中...で着地見込み！</h3>
-                <canvas id="analysisChart" width="400" height="200"></canvas>
+                <div class="chart-wrapper">
+                    <canvas id="analysisChart"></canvas>
+                </div>
             </div>
         </div>
 
