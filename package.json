@@ -1,0 +1,17 @@
+{
+  "name": "weight-training-management",
+  "version": "1.0.0",
+  "description": "体重・トレーニング管理システム（Netlify Functions対応）",
+  "main": "index.html",
+  "scripts": {
+    "dev": "netlify dev",
+    "build": "echo 'No build step required for static site'",
+    "deploy": "netlify deploy --prod"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.0"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.0.0"
+  }
+}
