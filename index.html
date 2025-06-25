@@ -289,6 +289,7 @@
             position: relative;
             height: 400px;
             width: 100%;
+            padding-bottom: 20px;
         }
 
         .table-container {
@@ -489,6 +490,7 @@
                 height: 480px;
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
+                padding-bottom: 10px;
             }
 
             .export-section {
@@ -1482,7 +1484,12 @@
                     options: {
                         responsive: isMobile ? false : true,
                         maintainAspectRatio: isMobile ? false : true,
-                        aspectRatio: isMobile ? undefined : 4/3,
+                        aspectRatio: isMobile ? undefined : 3/2,
+                        layout: {
+                            padding: {
+                                bottom: isMobile ? 10 : 20
+                            }
+                        },
                         interaction: {
                             mode: 'index',
                             intersect: false
