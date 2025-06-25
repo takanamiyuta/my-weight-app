@@ -362,7 +362,7 @@
     <div class="container">
         <div class="header">
             <h1>💪 俺の大会までの道のり</h1>
-            <p>Ver1.02 [筋トレ消費カロリー算出&スマホ対応]</p>
+            <p>Ver1.03 [範囲予測&棒グラフ対応]</p>
         </div>
 
         <div class="tabs">
@@ -569,7 +569,7 @@
         <!-- データ分析・グラフタブ -->
         <div id="analysis" class="tab-content">
             <div class="chart-container">
-                <h3 id="chart-title">大会当日は計算中...kgで着地見込み！</h3>
+                <h3 id="chart-title">大会当日は計算中...で着地見込み！</h3>
                 <canvas id="analysisChart" width="400" height="200"></canvas>
             </div>
         </div>
@@ -844,6 +844,47 @@
             return Math.max(1, Math.round(baseCalories)); // 最低1kcal
         }
 
+        // 範囲予測計算関数
+        function calculateWeightPrediction(weightData) {
+            if (weightData.length < 2) {
+                return {
+                    minWeight: null,
+                    maxWeight: null,
+                    currentWeight: weightData.length > 0 ? weightData[weightData.length - 1].weight : null
+                };
+            }
+
+            // 6/4以降のデータでフィルタリング（水分を除外）
+            const startDate = '2025-06-04';
+            const filteredData = weightData.filter(item => new Date(item.date) >= new Date(startDate));
+            
+            if (filteredData.length < 2) {
+                return {
+                    minWeight: null,
+                    maxWeight: null,
+                    currentWeight: weightData.length > 0 ? weightData[weightData.length - 1].weight : null
+                };
+            }
+
+            const currentWeight = filteredData[filteredData.length - 1].weight;
+            const latestDate = new Date(filteredData[filteredData.length - 1].date);
+            const targetDate = new Date('2025-10-18');
+            const daysToTarget = Math.ceil((targetDate - latestDate) / (1000 * 60 * 60 * 24));
+
+            // 範囲予測のパラメータ
+            const conservativeChange = -0.05; // kg/日（保守的）
+            const aggressiveChange = -0.12;   // kg/日（積極的）
+
+            const minWeight = currentWeight + (aggressiveChange * daysToTarget);
+            const maxWeight = currentWeight + (conservativeChange * daysToTarget);
+
+            return {
+                minWeight: Math.max(50, minWeight), // 最低50kg
+                maxWeight: Math.min(100, maxWeight), // 最高100kg
+                currentWeight: currentWeight
+            };
+        }
+
         // 日次データテーブル更新
         function updateDailyTable() {
             const tbody = document.getElementById('daily-table-body');
@@ -1061,41 +1102,38 @@
                 }
             });
 
-            // 体重予測線の計算
-            let predictionData = [];
-            let predictedWeight = null;
-            const validWeights = weightData.filter(w => w !== null && !isNaN(w));
+            // 範囲予測の計算
+            const weightPrediction = calculateWeightPrediction(dailyData);
             
-            if (validWeights.length >= 2) {
-                const firstWeight = validWeights[0];
-                const lastWeight = validWeights[validWeights.length - 1];
-                const dataPoints = validWeights.length;
+            // 予測線データ（上限・下限の幅を持たせる）
+            let predictionMinData = new Array(labels.length).fill(null);
+            let predictionMaxData = new Array(labels.length).fill(null);
+            
+            if (weightPrediction.minWeight && weightPrediction.maxWeight) {
+                const currentIndex = dateRange.findIndex(date => {
+                    const dateStr = date.toISOString().split('T')[0];
+                    return dailyData.some(d => d.date === dateStr);
+                });
                 
-                // 安全な傾向計算
-                const trend = dataPoints > 1 ? (lastWeight - firstWeight) / (dataPoints - 1) : 0;
-                
-                // 予測体重を計算（10月18日時点）
-                const endDateIndex = labels.length - 1;
-                predictedWeight = firstWeight + (trend * endDateIndex);
-                predictedWeight = Math.max(40, Math.min(200, predictedWeight)); // 40-200kgの範囲に制限
-                
-                // 予測線データを作成（開始点と終了点のみ）
-                predictionData = new Array(labels.length).fill(null);
-                if (validWeights.length > 0) {
-                    predictionData[0] = firstWeight;
-                    predictionData[endDateIndex] = predictedWeight;
+                if (currentIndex >= 0) {
+                    const endIndex = labels.length - 1;
+                    predictionMinData[currentIndex] = weightPrediction.currentWeight;
+                    predictionMinData[endIndex] = weightPrediction.minWeight;
+                    predictionMaxData[currentIndex] = weightPrediction.currentWeight;
+                    predictionMaxData[endIndex] = weightPrediction.maxWeight;
                 }
             }
 
             // タイトルを更新
             const chartTitle = document.getElementById('chart-title');
-            if (predictedWeight !== null) {
-                chartTitle.textContent = `大会当日は${predictedWeight.toFixed(1)}kgで着地見込み！`;
+            if (weightPrediction.minWeight && weightPrediction.maxWeight) {
+                chartTitle.textContent = `大会当日は${weightPrediction.minWeight.toFixed(1)}kg〜${weightPrediction.maxWeight.toFixed(1)}kgで着地見込み！`;
             } else {
-                chartTitle.textContent = '大会当日は計算中...kgで着地見込み！';
+                chartTitle.textContent = '大会当日は計算中...で着地見込み！';
             }
 
             // 軸の範囲計算
+            const validWeights = weightData.filter(w => w !== null && !isNaN(w));
             const weightMin = validWeights.length > 0 ? Math.min(...validWeights) - 2 : 60;
             const weightMax = validWeights.length > 0 ? Math.max(...validWeights) + 2 : 80;
 
@@ -1122,8 +1160,8 @@
                             pointRadius: 5,
                             spanGaps: true
                         }, {
-                            label: '体重予測線',
-                            data: predictionData,
+                            label: '予測範囲（下限）',
+                            data: predictionMinData,
                             borderColor: '#ef4444',
                             backgroundColor: 'transparent',
                             borderWidth: 2,
@@ -1133,16 +1171,25 @@
                             pointRadius: 0,
                             spanGaps: true
                         }, {
+                            label: '予測範囲（上限）',
+                            data: predictionMaxData,
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            borderWidth: 2,
+                            borderDash: [10, 5],
+                            yAxisID: 'y',
+                            tension: 0,
+                            pointRadius: 0,
+                            spanGaps: true,
+                            fill: '-1'
+                        }, {
                             label: '総消費カロリー (kcal)',
                             data: totalCaloriesData,
+                            type: 'bar',
+                            backgroundColor: 'rgba(16, 185, 129, 0.6)',
                             borderColor: '#10b981',
-                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                            borderWidth: 2,
-                            yAxisID: 'y1',
-                            tension: 0.1,
-                            pointBackgroundColor: '#10b981',
-                            pointRadius: 3,
-                            spanGaps: true
+                            borderWidth: 1,
+                            yAxisID: 'y1'
                         }]
                     },
                     options: {
@@ -1164,8 +1211,8 @@
                                         if (event && context[0].datasetIndex === 0) {
                                             return `イベント: ${event}`;
                                         }
-                                        if (context[0].datasetIndex === 1 && dataIndex === labels.length - 1) {
-                                            return '10月18日の予測体重';
+                                        if ((context[0].datasetIndex === 1 || context[0].datasetIndex === 2) && dataIndex === labels.length - 1) {
+                                            return '10月18日の予測範囲';
                                         }
                                         return '';
                                     }
