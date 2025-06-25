@@ -552,7 +552,7 @@
     <div class="container">
         <div class="header">
             <h1>💪 俺の大会までの道のり</h1>
-            <p>Ver1.29 [PCグラフ下部切れ根本修正 - 高さ50px増・余白強化]</p>
+            <p>Ver1.30 [スマホ版グラフ色修正 - 筋トレ日#d9333f反映]</p>
         </div>
 
         <div class="tabs">
@@ -1623,6 +1623,11 @@
                     
                     // Chart.jsに変更を反映
                     analysisChart.resize(targetWidth, targetHeight);
+                    
+                    // スマホ版でも色設定を再適用
+                    analysisChart.data.datasets[2].backgroundColor = backgroundColors;
+                    analysisChart.data.datasets[2].borderColor = borderColors;
+                    analysisChart.update('none');
                 }
                 
             } catch (error) {
