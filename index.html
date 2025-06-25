@@ -450,7 +450,7 @@
     <div class="container">
         <div class="header">
             <h1>💪 俺の大会までの道のり</h1>
-            <p>Ver1.20 [緊急復旧・PC/スマホ別々設定・完全修正]</p>
+            <p>Ver1.21 [スマホ横スクロール対応・筋トレ日色分け修正]</p>
         </div>
 
         <div class="tabs">
@@ -1260,12 +1260,20 @@
             
             dateRange.forEach(date => {
                 const dateStr = date.toISOString().split('T')[0];
-                if (hasTrainingOnDate(dateStr)) {
-                    backgroundColors.push('rgba(217, 51, 63, 0.6)');
-                    borderColors.push('#d9333f');
+                const hasTraining = hasTrainingOnDate(dateStr);
+                const hasCalories = totalCaloriesData[dateRange.indexOf(date)] > 0;
+                
+                if (hasCalories) {
+                    if (hasTraining) {
+                        backgroundColors.push('rgba(217, 51, 63, 0.8)'); // 筋トレ日: #d9333f (濃い赤)
+                        borderColors.push('#d9333f');
+                    } else {
+                        backgroundColors.push('rgba(16, 185, 129, 0.6)'); // ウォーキングのみ: #10b981 (緑)
+                        borderColors.push('#10b981');
+                    }
                 } else {
-                    backgroundColors.push('rgba(16, 185, 129, 0.6)');
-                    borderColors.push('#10b981');
+                    backgroundColors.push('rgba(200, 200, 200, 0.3)'); // データなし: グレー
+                    borderColors.push('#cccccc');
                 }
             });
 
@@ -1420,9 +1428,12 @@
                     const canvas = analysisChart.canvas;
                     const rect = canvas.getBoundingClientRect();
                     const targetHeight = Math.min(Math.max(window.innerHeight * 0.6, 480), 600);
+                    const targetWidth = 1200; // 横スクロール用の幅
                     
                     canvas.style.height = targetHeight + 'px';
+                    canvas.style.width = targetWidth + 'px';
                     canvas.height = targetHeight;
+                    canvas.width = targetWidth;
                     
                     analysisChart.resize();
                 }
