@@ -794,4 +794,738 @@
                 showStatus('データを読み込み中...', 'success');
                 
                 // 日次データ読み込み
-                const dailyResponse = await fetch(`${API_
+                const dailyResponse = await fetch(`${API_BASE}/get-daily-data`);
+                if (dailyResponse.ok) {
+                    dailyData = await dailyResponse.json();
+                }
+
+                // トレーニングデータ読み込み
+                const trainingResponse = await fetch(`${API_BASE}/get-training-data`);
+                if (trainingResponse.ok) {
+                    trainingData = await trainingResponse.json();
+                }
+
+                updateDailyTable();
+                updateTrainingTable();
+                showStatus('データの読み込みが完了しました');
+            } catch (error) {
+                console.error('データ読み込みエラー:', error);
+                showStatus('データの読み込みに失敗しました', 'error');
+            }
+        }
+
+        // 日次データ送信処理
+        async function handleDailySubmit(e) {
+            e.preventDefault();
+            
+            const formData = {
+                date: document.getElementById('daily-date').value,
+                weight: parseFloat(document.getElementById('weight').value),
+                calories: parseInt(document.getElementById('calories').value),
+                steps: parseInt(document.getElementById('steps').value),
+                event: document.getElementById('event').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/save-daily-data`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showStatus('日次データを保存しました');
+                    loadAllData(); // データを再読み込み
+                    clearDailyForm();
+                } else {
+                    throw new Error('保存に失敗しました');
+                }
+            } catch (error) {
+                console.error('保存エラー:', error);
+                showStatus('データの保存に失敗しました', 'error');
+            }
+        }
+
+        // トレーニングデータ送信処理
+        async function handleTrainingSubmit(e) {
+            e.preventDefault();
+            
+            const weight = parseFloat(document.getElementById('training-weight').value);
+            const reps = parseInt(document.getElementById('reps').value);
+            const sets = parseInt(document.getElementById('sets').value);
+            const exercise = document.getElementById('exercise').value;
+            
+            const formData = {
+                date: document.getElementById('training-date').value,
+                exercise: exercise,
+                weight: weight,
+                reps: reps,
+                sets: sets,
+                bodyPart: getBodyPart(exercise),
+                intensity: calculateIntensity(weight, reps, sets)
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/save-training-data`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showStatus('トレーニングデータを保存しました');
+                    loadAllData(); // データを再読み込み
+                    clearTrainingForm();
+                } else {
+                    throw new Error('保存に失敗しました');
+                }
+            } catch (error) {
+                console.error('保存エラー:', error);
+                showStatus('データの保存に失敗しました', 'error');
+            }
+        }
+
+        // 部位判定関数
+        function getBodyPart(exercise) {
+            const bodyPartMap = {
+                'ベンチプレス': '胸', 'ペックフライ': '胸', 'ディップス': '胸', 'デクラインプレス': '胸',
+                'ラットプルダウン': '背中', 'DYローイング': '背中', 'Tバーローイング': '背中', 'チンニング': '背中', 'デッドリフト': '背中',
+                'マシンショルダープレス': '肩', 'ダンベルサイドレイズ': '肩', 'ダンベルリアレイズ': '肩',
+                'インクラインダンベルカール': '腕',
+                'スクワット': '脚', 'ハックスクワット': '脚', '45度レッグプレス': '脚'
+            };
+            return bodyPartMap[exercise] || 'その他';
+        }
+
+        // 強度計算関数
+        function calculateIntensity(weight, reps, sets) {
+            const totalVolume = weight * reps * sets;
+            if (totalVolume >= 3000) return '高';
+            if (totalVolume >= 1500) return '中';
+            return '低';
+        }
+
+        // フォームクリア
+        function clearDailyForm() {
+            document.getElementById('daily-form').reset();
+            setupDateDefaults();
+        }
+
+        function clearTrainingForm() {
+            document.getElementById('training-form').reset();
+            setupDateDefaults();
+        }
+
+        // 日付フォーマット関数
+        function formatDateWithDay(dateStr) {
+            const date = new Date(dateStr + 'T00:00:00');
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+            const dayOfWeek = dayNames[date.getDay()];
+            
+            let className = '';
+            if (date.getDay() === 6) {
+                className = 'saturday';
+            } else if (date.getDay() === 0 || holidays2025.includes(dateStr)) {
+                className = 'sunday-holiday';
+            }
+            
+            return {
+                formatted: `${month}/${day}(${dayOfWeek})`,
+                className: className
+            };
+        }
+
+        // 消費カロリー計算
+        function calculateWalkingCalories(steps) {
+            return Math.round(steps * 0.04);
+        }
+
+        function calculateTrainingCalories(date) {
+            const dayTraining = trainingData.filter(t => t.date === date);
+            let totalCalories = 0;
+            
+            dayTraining.forEach(training => {
+                const calories = calculateExerciseCalories(training.exercise, training.weight, training.reps, training.sets);
+                totalCalories += calories;
+            });
+            
+            return Math.round(totalCalories);
+        }
+
+        function calculateExerciseCalories(exercise, weight, reps, sets) {
+            const baseWeight = 75;
+            const exerciseMultipliers = {
+                'ベンチプレス': 0.8, 'ペックフライ': 0.6, 'ディップス': 0.9, 'デクラインプレス': 0.7,
+                'ラットプルダウン': 0.7, 'DYローイング': 0.8, 'Tバーローイング': 0.8, 'チンニング': 1.0,
+                'マシンショルダープレス': 0.6, 'ダンベルサイドレイズ': 0.5, 'ダンベルリアレイズ': 0.5,
+                'インクラインダンベルカール': 0.4, 'デッドリフト': 1.2, 'スクワット': 1.1,
+                'ハックスクワット': 1.0, '45度レッグプレス': 0.9
+            };
+
+            const multiplier = exerciseMultipliers[exercise] || 0.6;
+            const baseCalories = (weight / baseWeight) * reps * sets * multiplier * 0.8;
+            return Math.max(1, Math.round(baseCalories));
+        }
+
+        // 筋トレ実施日判定
+        function hasTrainingOnDate(date) {
+            return trainingData.some(t => t.date === date);
+        }
+
+        // 最小体重記録の取得
+        function getMinimumWeight(currentDate) {
+            const sortedData = [...dailyData]
+                .filter(item => item.date <= currentDate)
+                .sort((a, b) => a.weight - b.weight);
+            return sortedData.length > 0 ? sortedData[0].weight : null;
+        }
+
+        function isMinimumWeight(weight, date) {
+            const minWeight = getMinimumWeight(date);
+            return minWeight !== null && weight === minWeight;
+        }
+
+        // 範囲予測計算関数
+        function calculateWeightPrediction(weightData) {
+            if (weightData.length < 2) {
+                return {
+                    minWeight: null,
+                    maxWeight: null,
+                    currentWeight: weightData.length > 0 ? weightData[weightData.length - 1].weight : null
+                };
+            }
+
+            const startDate = '2025-06-04';
+            const filteredData = weightData.filter(item => new Date(item.date) >= new Date(startDate));
+            
+            if (filteredData.length < 2) {
+                return {
+                    minWeight: null,
+                    maxWeight: null,
+                    currentWeight: weightData.length > 0 ? weightData[weightData.length - 1].weight : null
+                };
+            }
+
+            const currentWeight = filteredData[filteredData.length - 1].weight;
+            const latestDate = new Date(filteredData[filteredData.length - 1].date);
+            const targetDate = new Date('2025-10-18');
+            const daysToTarget = Math.ceil((targetDate - latestDate) / (1000 * 60 * 60 * 24));
+
+            const conservativeChange = -0.05;
+            const aggressiveChange = -0.12;
+
+            const minWeight = currentWeight + (aggressiveChange * daysToTarget);
+            const maxWeight = currentWeight + (conservativeChange * daysToTarget);
+
+            return {
+                minWeight: Math.max(50, minWeight),
+                maxWeight: Math.min(100, maxWeight),
+                currentWeight: currentWeight
+            };
+        }
+
+        // 日次データテーブル更新
+        function updateDailyTable() {
+            const tbody = document.getElementById('daily-table-body');
+            tbody.innerHTML = '';
+
+            const sortedData = [...dailyData].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            sortedData.forEach((item, index) => {
+                const row = document.createElement('tr');
+                
+                let weightDiff = '';
+                let weightDiffClass = '';
+                if (index < sortedData.length - 1) {
+                    const prevWeight = sortedData[index + 1].weight;
+                    const diff = item.weight - prevWeight;
+                    if (diff > 0) {
+                        weightDiff = `+${diff.toFixed(1)}`;
+                        weightDiffClass = 'weight-increase';
+                    } else if (diff < 0) {
+                        weightDiff = diff.toFixed(1);
+                        weightDiffClass = 'weight-decrease';
+                    } else {
+                        weightDiff = '±0.0';
+                    }
+                }
+
+                const dateInfo = formatDateWithDay(item.date);
+                const walkingCalories = calculateWalkingCalories(item.steps);
+                const trainingCalories = calculateTrainingCalories(item.date);
+                
+                const isMinWeight = isMinimumWeight(item.weight, item.date);
+                const weightDisplay = isMinWeight ? `${item.weight} 👑` : item.weight;
+
+                row.innerHTML = `
+                    <td class="${dateInfo.className}">${dateInfo.formatted}</td>
+                    <td>${weightDisplay}</td>
+                    <td class="${weightDiffClass}">${weightDiff}</td>
+                    <td>${item.calories}</td>
+                    <td>${item.steps.toLocaleString()}</td>
+                    <td>${walkingCalories}</td>
+                    <td>${trainingCalories}</td>
+                    <td>${item.event || '-'}</td>
+                    <td>
+                        <button class="btn" onclick="editDailyData('${item.date}')" style="padding: 4px 8px; font-size: 0.7rem; margin-right: 3px;">編集</button>
+                        <button class="btn" onclick="deleteDailyData('${item.date}')" style="padding: 4px 8px; font-size: 0.7rem;">削除</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // トレーニングデータテーブル更新
+        function updateTrainingTable() {
+            const tbody = document.getElementById('training-table-body');
+            tbody.innerHTML = '';
+
+            const sortedData = [...trainingData].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            sortedData.forEach((item, index) => {
+                const row = document.createElement('tr');
+                const dateInfo = formatDateWithDay(item.date);
+
+                row.innerHTML = `
+                    <td class="${dateInfo.className}">${dateInfo.formatted}</td>
+                    <td>${item.exercise}</td>
+                    <td>${item.weight}</td>
+                    <td>${item.reps}</td>
+                    <td>${item.sets}</td>
+                    <td>${item.bodyPart || getBodyPart(item.exercise)}</td>
+                    <td>${item.intensity || calculateIntensity(item.weight, item.reps, item.sets)}</td>
+                    <td>
+                        <button class="btn" onclick="editTrainingData(${index})" style="padding: 4px 8px; font-size: 0.7rem; margin-right: 3px;">編集</button>
+                        <button class="btn" onclick="deleteTrainingData(${index})" style="padding: 4px 8px; font-size: 0.7rem;">削除</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // 編集機能
+        function editDailyData(date) {
+            const item = dailyData.find(d => d.date === date);
+            if (!item) return;
+
+            document.getElementById('daily-date').value = item.date;
+            document.getElementById('weight').value = item.weight;
+            document.getElementById('calories').value = item.calories;
+            document.getElementById('steps').value = item.steps;
+            document.getElementById('event').value = item.event || '';
+
+            showTab('daily');
+            document.getElementById('daily-form').scrollIntoView({ behavior: 'smooth' });
+            showStatus('データを編集モードで読み込みました。修正して保存してください。', 'success');
+        }
+
+        function editTrainingData(index) {
+            const item = trainingData[index];
+            if (!item) return;
+
+            document.getElementById('training-date').value = item.date;
+            document.getElementById('exercise').value = item.exercise;
+            document.getElementById('training-weight').value = item.weight;
+            document.getElementById('reps').value = item.reps;
+            document.getElementById('sets').value = item.sets;
+
+            showTab('training');
+            document.getElementById('training-form').scrollIntoView({ behavior: 'smooth' });
+            showStatus('データを編集モードで読み込みました。修正して保存してください。', 'success');
+        }
+
+        // 削除処理
+        async function deleteDailyData(date) {
+            if (!confirm('このデータを削除しますか？')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/delete-daily-data`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ date })
+                });
+
+                if (response.ok) {
+                    showStatus('データを削除しました');
+                    loadAllData();
+                } else {
+                    throw new Error('削除に失敗しました');
+                }
+            } catch (error) {
+                console.error('削除エラー:', error);
+                showStatus('データの削除に失敗しました', 'error');
+            }
+        }
+
+        async function deleteTrainingData(index) {
+            if (!confirm('このデータを削除しますか？')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/delete-training-data`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ index })
+                });
+
+                if (response.ok) {
+                    showStatus('データを削除しました');
+                    loadAllData();
+                } else {
+                    throw new Error('削除に失敗しました');
+                }
+            } catch (error) {
+                console.error('削除エラー:', error);
+                showStatus('データの削除に失敗しました', 'error');
+            }
+        }
+
+        // 分析グラフ描画（改良版 - エラー対策強化）
+        function drawAnalysisChart() {
+            // Chart.js使用可能性チェック
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.jsが利用できません');
+                const chartTitle = document.getElementById('chart-title');
+                chartTitle.textContent = 'Chart.jsライブラリが読み込まれていません';
+                return;
+            }
+
+            try {
+                const ctxElement = document.getElementById('analysisChart');
+                if (!ctxElement) {
+                    console.error('Canvas要素が見つかりません');
+                    return;
+                }
+                
+                // 既存のチャートを安全に削除
+                if (analysisChart) {
+                    try {
+                        analysisChart.destroy();
+                    } catch (e) {
+                        console.log('Chart destroy error:', e);
+                    }
+                    analysisChart = null;
+                }
+
+                const ctx = ctxElement.getContext('2d');
+                if (!ctx) {
+                    console.error('Canvas context取得に失敗');
+                    return;
+                }
+
+                // データチェック
+                if (dailyData.length === 0) {
+                    ctx.clearRect(0, 0, ctxElement.width, ctxElement.height);
+                    ctx.font = '16px Arial';
+                    ctx.fillStyle = '#666';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('データがありません', ctxElement.width / 2, ctxElement.height / 2);
+                    return;
+                }
+
+                // データ準備
+                const startDate = new Date('2025-06-01');
+                const endDate = new Date('2025-10-18');
+                const dateRange = [];
+                const currentDate = new Date(startDate);
+
+                while (currentDate <= endDate) {
+                    dateRange.push(new Date(currentDate));
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+
+                const labels = dateRange.map(date => {
+                    const month = date.getMonth() + 1;
+                    const day = date.getDate();
+                    return `${month}/${day}`;
+                });
+
+                const weightData = [];
+                const totalCaloriesData = [];
+                const eventData = [];
+
+                dateRange.forEach(date => {
+                    const dateStr = date.toISOString().split('T')[0];
+                    const dailyRecord = dailyData.find(d => d.date === dateStr);
+                    
+                    if (dailyRecord) {
+                        weightData.push(dailyRecord.weight);
+                        const walkingCal = calculateWalkingCalories(dailyRecord.steps);
+                        const trainingCal = calculateTrainingCalories(dateStr);
+                        totalCaloriesData.push(walkingCal + trainingCal);
+                        eventData.push(dailyRecord.event || '');
+                    } else {
+                        weightData.push(null);
+                        totalCaloriesData.push(null);
+                        eventData.push('');
+                    }
+                });
+
+                // 範囲予測の計算
+                const weightPrediction = calculateWeightPrediction(dailyData);
+                
+                let predictionData = new Array(labels.length).fill(null);
+                if (weightPrediction.minWeight && weightPrediction.maxWeight) {
+                    const currentIndex = dateRange.findIndex(date => {
+                        const dateStr = date.toISOString().split('T')[0];
+                        return dailyData.some(d => d.date === dateStr);
+                    });
+                    
+                    if (currentIndex >= 0) {
+                        const endIndex = labels.length - 1;
+                        predictionData[currentIndex] = weightPrediction.currentWeight;
+                        predictionData[endIndex] = weightPrediction.maxWeight;
+                    }
+                }
+
+                // タイトル更新
+                const chartTitle = document.getElementById('chart-title');
+                if (weightPrediction.minWeight && weightPrediction.maxWeight) {
+                    chartTitle.textContent = `大会当日は${weightPrediction.maxWeight.toFixed(1)}kg〜${weightPrediction.minWeight.toFixed(1)}kgで着地見込み！（シミュレーション：${weightPrediction.maxWeight.toFixed(1)}kg）`;
+                } else {
+                    chartTitle.textContent = '大会当日は計算中...で着地見込み！';
+                }
+
+                // 軸の範囲計算
+                const validWeights = weightData.filter(w => w !== null && !isNaN(w));
+                let weightMin = validWeights.length > 0 ? Math.min(...validWeights) - 2 : 60;
+                let weightMax = validWeights.length > 0 ? Math.max(...validWeights) + 2 : 80;
+                
+                if (weightPrediction.maxWeight) {
+                    weightMin = Math.min(weightMin, weightPrediction.maxWeight - 1);
+                    weightMax = Math.max(weightMax, weightPrediction.maxWeight + 1);
+                }
+
+                const validCalories = totalCaloriesData.filter(c => c !== null && !isNaN(c) && c > 0);
+                const caloriesMin = validCalories.length > 0 ? Math.max(0, Math.min(...validCalories) - 100) : 0;
+                const caloriesMax = validCalories.length > 0 ? Math.max(...validCalories) + 100 : 1000;
+
+                // 色分け
+                const backgroundColors = [];
+                const borderColors = [];
+                
+                dateRange.forEach(date => {
+                    const dateStr = date.toISOString().split('T')[0];
+                    if (hasTrainingOnDate(dateStr)) {
+                        backgroundColors.push('rgba(217, 51, 63, 0.6)');
+                        borderColors.push('#d9333f');
+                    } else {
+                        backgroundColors.push('rgba(16, 185, 129, 0.6)');
+                        borderColors.push('#10b981');
+                    }
+                });
+
+                // モバイル判定
+                const isMobile = window.innerWidth <= 768;
+
+                analysisChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: '体重 (kg)',
+                            data: weightData,
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            borderWidth: 3,
+                            yAxisID: 'y',
+                            tension: 0.1,
+                            pointBackgroundColor: '#ef4444',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            spanGaps: true
+                        }, {
+                            label: '予測（最重量）',
+                            data: predictionData,
+                            borderColor: '#ef4444',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            yAxisID: 'y',
+                            tension: 0,
+                            pointRadius: 0,
+                            spanGaps: true
+                        }, {
+                            label: '総消費カロリー (kcal)',
+                            data: totalCaloriesData,
+                            type: 'bar',
+                            backgroundColor: backgroundColors,
+                            borderColor: borderColors,
+                            borderWidth: 1,
+                            yAxisID: 'y1'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: window.innerWidth > 768,
+                        aspectRatio: window.innerWidth > 768 ? 4/3 : undefined,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    afterBody: function(context) {
+                                        const dataIndex = context[0].dataIndex;
+                                        const event = eventData[dataIndex];
+                                        const dateStr = dateRange[dataIndex].toISOString().split('T')[0];
+                                        
+                                        let tooltipText = '';
+                                        if (event && context[0].datasetIndex === 0) {
+                                            tooltipText += `イベント: ${event}`;
+                                        }
+                                        if (context[0].datasetIndex === 1 && dataIndex === labels.length - 1) {
+                                            tooltipText += '10月18日の予測（最重量）';
+                                        }
+                                        if (context[0].datasetIndex === 2) {
+                                            const hasTraining = hasTrainingOnDate(dateStr);
+                                            tooltipText += hasTraining ? '筋トレ実施日' : 'ウォーキングのみ';
+                                        }
+                                        return tooltipText;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                display: true,
+                                title: {
+                                    display: true,
+                                    text: '日付'
+                                }
+                            },
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                title: {
+                                    display: true,
+                                    text: '体重 (kg)'
+                                },
+                                min: weightMin,
+                                max: weightMax
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                title: {
+                                    display: true,
+                                    text: '消費カロリー (kcal)'
+                                },
+                                grid: {
+                                    drawOnChartArea: false
+                                },
+                                min: caloriesMin,
+                                max: caloriesMax
+                            }
+                        }
+                    }
+                });
+                
+            } catch (error) {
+                console.error('グラフの描画でエラーが発生しました:', error);
+                const chartTitle = document.getElementById('chart-title');
+                chartTitle.textContent = 'グラフの表示でエラーが発生しました';
+                showStatus('グラフの表示でエラーが発生しました。データを確認してください。', 'error');
+            }
+        }
+
+        // CSVエクスポート機能
+        function exportDailyData() {
+            const headers = ['日付', '体重(kg)', '摂取カロリー(kcal)', '歩数', '歩行消費カロリー', '筋トレ消費カロリー', 'イベント'];
+            
+            const csvContent = [
+                headers.join(','),
+                ...dailyData.map(item => [
+                    item.date,
+                    item.weight,
+                    item.calories,
+                    item.steps,
+                    calculateWalkingCalories(item.steps),
+                    calculateTrainingCalories(item.date),
+                    `"${item.event || ''}"`
+                ].join(','))
+            ].join('\n');
+
+            downloadCSV(csvContent, 'daily_data.csv');
+        }
+
+        function exportTrainingData() {
+            const headers = ['日付', '種目', '重量(kg)', '回数', 'セット数', '部位', '強度'];
+            
+            const csvContent = [
+                headers.join(','),
+                ...trainingData.map(item => [
+                    item.date,
+                    `"${item.exercise}"`,
+                    item.weight,
+                    item.reps,
+                    item.sets,
+                    item.bodyPart || getBodyPart(item.exercise),
+                    item.intensity || calculateIntensity(item.weight, item.reps, item.sets)
+                ].join(','))
+            ].join('\n');
+
+            downloadCSV(csvContent, 'training_data.csv');
+        }
+
+        function exportAllData() {
+            const headers = ['日付', '体重(kg)', '摂取カロリー(kcal)', '歩数', '歩行消費カロリー', '筋トレ消費カロリー', 'イベント', 'トレーニング詳細'];
+            
+            const csvContent = [
+                headers.join(','),
+                ...dailyData.map(item => {
+                    const dayTraining = trainingData.filter(t => t.date === item.date);
+                    const trainingDetails = dayTraining.map(t => 
+                        `${t.exercise}:${t.weight}kg×${t.reps}回×${t.sets}セット`
+                    ).join(';');
+                    
+                    return [
+                        item.date,
+                        item.weight,
+                        item.calories,
+                        item.steps,
+                        calculateWalkingCalories(item.steps),
+                        calculateTrainingCalories(item.date),
+                        `"${item.event || ''}"`,
+                        `"${trainingDetails}"`
+                    ].join(',');
+                })
+            ].join('\n');
+
+            downloadCSV(csvContent, 'all_data.csv');
+        }
+
+        function downloadCSV(content, filename) {
+            const BOM = '\uFEFF';
+            const blob = new Blob([BOM + content], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showStatus(`${filename} をダウンロードしました`);
+        }
+    </script>
+</body>
+</html>
