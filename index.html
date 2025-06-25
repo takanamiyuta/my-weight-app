@@ -450,7 +450,7 @@
     <div class="container">
         <div class="header">
             <h1>💪 俺の大会までの道のり</h1>
-            <p>Ver1.18 [スマホグラフ高さ60vh対応・視認性大幅向上]</p>
+            <p>Ver1.19 [スマホグラフ高さ強制修正・Chart.js設定変更]</p>
         </div>
 
         <div class="tabs">
@@ -1310,8 +1310,8 @@
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: window.innerWidth > 768, // PCでは4:3維持、スマホでは自由
-                        aspectRatio: window.innerWidth > 768 ? 4/3 : undefined,
+                        maintainAspectRatio: false, // スマホでは比率固定を完全に無効化
+                        aspectRatio: undefined, // 比率指定も削除
                         interaction: {
                             mode: 'index',
                             intersect: false
