@@ -369,6 +369,45 @@
 
             .form-grid {
                 grid-template-columns: 1fr;
+                gap: 15px; /* 間隔を狭く */
+            }
+
+            /* スマホ専用：数値入力フィールドの幅制限 */
+            .form-group input[type="number"] {
+                max-width: 120px; /* 数値入力は120pxに制限 */
+                font-size: 16px; /* フォントサイズ調整 */
+            }
+
+            .form-group input[type="date"] {
+                max-width: 160px; /* 日付入力は160pxに制限 */
+                font-size: 16px;
+            }
+
+            .form-group select {
+                max-width: 200px; /* セレクトボックスは200pxに制限 */
+                font-size: 16px;
+            }
+
+            .form-group input[type="text"] {
+                max-width: 250px; /* テキスト入力は250pxに制限 */
+                font-size: 16px;
+            }
+
+            /* ラベルとフィールドを横並びに */
+            .form-group {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 10px;
+            }
+
+            .form-group label {
+                margin-bottom: 0;
+                margin-right: 10px;
+                flex-shrink: 0;
+                width: 140px; /* ラベル幅固定 */
+                font-size: 14px;
             }
 
             .form-section {
@@ -450,7 +489,7 @@
     <div class="container">
         <div class="header">
             <h1>💪 俺の大会までの道のり</h1>
-            <p>Ver1.25 [PC専用グラフ高さ70%調整・完成版]</p>
+            <p>Ver1.26 [PC高さ修正・スマホフォームUI大幅改善]</p>
         </div>
 
         <div class="tabs">
