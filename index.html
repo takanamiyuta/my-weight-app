@@ -450,7 +450,7 @@
     <div class="container">
         <div class="header">
             <h1>💪 俺の大会までの道のり</h1>
-            <p>Ver1.22 [スマホ横スクロール完全実装・6月表示最適化]</p>
+            <p>Ver1.23 [Chart.js幅強制固定・横スクロール確実実装]</p>
         </div>
 
         <div class="tabs">
@@ -1317,9 +1317,9 @@
                         }]
                     },
                     options: {
-                        responsive: true,
-                        maintainAspectRatio: window.innerWidth > 768, // PCでは4:3維持、スマホでは自由
-                        aspectRatio: window.innerWidth > 768 ? 4/3 : undefined,
+                        responsive: false, // スマホではresponsiveを無効化
+                        maintainAspectRatio: false,
+                        aspectRatio: undefined,
                         interaction: {
                             mode: 'index',
                             intersect: false
@@ -1426,25 +1426,28 @@
                 // スマホでのみキャンバスサイズを直接変更
                 if (isMobile) {
                     const canvas = analysisChart.canvas;
-                    const rect = canvas.getBoundingClientRect();
                     const targetHeight = Math.min(Math.max(window.innerHeight * 0.6, 480), 600);
+                    const targetWidth = 2400; // 強制的に大きな幅を設定
                     
-                    // 全期間を表示するのに必要な幅を計算
-                    const totalDays = dateRange.length;
-                    const dayWidth = 15; // 1日あたりの幅
-                    const targetWidth = Math.max(totalDays * dayWidth, 1800); // 最小1800px
-                    
+                    // キャンバスサイズを強制設定
                     canvas.style.height = targetHeight + 'px';
                     canvas.style.width = targetWidth + 'px';
-                    canvas.height = targetHeight;
                     canvas.width = targetWidth;
+                    canvas.height = targetHeight;
                     
-                    // コンテナにoverflow設定を確実に適用
+                    // Chart.jsの内部サイズも強制変更
+                    analysisChart.canvas.parentNode.style.position = 'relative';
+                    analysisChart.canvas.parentNode.style.height = targetHeight + 'px';
+                    analysisChart.canvas.parentNode.style.width = targetWidth + 'px';
+                    
+                    // 親コンテナのスクロール設定
                     const chartWrapper = canvas.parentElement;
-                    chartWrapper.style.overflowX = 'auto';
+                    chartWrapper.style.overflowX = 'scroll'; // 強制スクロール
                     chartWrapper.style.width = '100%';
+                    chartWrapper.style.height = targetHeight + 'px';
                     
-                    analysisChart.resize();
+                    // Chart.jsに変更を反映
+                    analysisChart.resize(targetWidth, targetHeight);
                 }
                 
             } catch (error) {
