@@ -374,22 +374,26 @@
 
             /* スマホ専用：数値入力フィールドの幅制限 */
             .form-group input[type="number"] {
-                max-width: 120px; /* 数値入力は120pxに制限 */
-                font-size: 16px; /* フォントサイズ調整 */
+                max-width: 80px; /* 数値入力は80pxに制限 */
+                width: 80px;
+                font-size: 16px;
             }
 
             .form-group input[type="date"] {
-                max-width: 160px; /* 日付入力は160pxに制限 */
+                max-width: 140px; /* 日付入力は140pxに制限 */
+                width: 140px;
                 font-size: 16px;
             }
 
             .form-group select {
-                max-width: 200px; /* セレクトボックスは200pxに制限 */
+                max-width: 120px; /* セレクトボックスは120pxに制限 */
+                width: 120px;
                 font-size: 16px;
             }
 
             .form-group input[type="text"] {
-                max-width: 250px; /* テキスト入力は250pxに制限 */
+                max-width: 180px; /* テキスト入力は180pxに制限 */
+                width: 180px;
                 font-size: 16px;
             }
 
@@ -400,14 +404,16 @@
                 align-items: center;
                 justify-content: space-between;
                 margin-bottom: 10px;
+                padding: 0 5px; /* 左右にパディング追加 */
             }
 
             .form-group label {
                 margin-bottom: 0;
-                margin-right: 10px;
+                margin-right: 8px;
                 flex-shrink: 0;
-                width: 140px; /* ラベル幅固定 */
+                width: 120px; /* ラベル幅を120pxに縮小 */
                 font-size: 14px;
+                text-align: left;
             }
 
             .form-section {
@@ -489,7 +495,7 @@
     <div class="container">
         <div class="header">
             <h1>💪 俺の大会までの道のり</h1>
-            <p>Ver1.26 [PC高さ修正・スマホフォームUI大幅改善]</p>
+            <p>Ver1.27 [PC Chart.js高さ強制・スマホUI幅修正・完全対応]</p>
         </div>
 
         <div class="tabs">
@@ -804,6 +810,15 @@
                 const dailyResponse = await fetch(`${API_BASE}/get-daily-data`);
                 if (dailyResponse.ok) {
                     dailyData = await dailyResponse.json();
+                } else {
+                    // PCでのみ高さを70vhに強制設定
+                    const canvas = analysisChart.canvas;
+                    const targetHeight = Math.min(window.innerHeight * 0.7, 600);
+                    
+                    canvas.style.height = targetHeight + 'px';
+                    canvas.height = targetHeight;
+                    
+                    analysisChart.resize();
                 }
 
                 // トレーニングデータ読み込み
