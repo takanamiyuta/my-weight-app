@@ -287,9 +287,9 @@
 
         .chart-wrapper {
             position: relative;
-            height: 400px;
+            height: 450px;
             width: 100%;
-            padding-bottom: 20px;
+            padding: 10px;
         }
 
         .table-container {
@@ -487,10 +487,10 @@
             }
 
             .chart-wrapper {
-                height: 480px;
+                height: 500px;
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
-                padding-bottom: 10px;
+                padding: 5px;
             }
 
             .export-section {
@@ -552,7 +552,7 @@
     <div class="container">
         <div class="header">
             <h1>💪 俺の大会までの道のり</h1>
-            <p>Ver1.28 [筋トレ日棒グラフ色修正 - #d9333f統一]</p>
+            <p>Ver1.29 [PCグラフ下部切れ根本修正 - 高さ50px増・余白強化]</p>
         </div>
 
         <div class="tabs">
@@ -1484,10 +1484,13 @@
                     options: {
                         responsive: isMobile ? false : true,
                         maintainAspectRatio: isMobile ? false : true,
-                        aspectRatio: isMobile ? undefined : 3/2,
+                        aspectRatio: isMobile ? undefined : 2.5/1,
                         layout: {
                             padding: {
-                                bottom: isMobile ? 10 : 20
+                                top: 10,
+                                bottom: isMobile ? 15 : 30,
+                                left: 10,
+                                right: 10
                             }
                         },
                         interaction: {
