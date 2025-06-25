@@ -450,7 +450,7 @@
     <div class="container">
         <div class="header">
             <h1>💪 俺の大会までの道のり</h1>
-            <p>Ver1.23 [Chart.js幅強制固定・横スクロール確実実装]</p>
+            <p>Ver1.24 [PC設定復元・筋トレ日色分け確実実装・要件厳守]</p>
         </div>
 
         <div class="tabs">
@@ -1254,28 +1254,31 @@
             const caloriesMin = validCalories.length > 0 ? Math.max(0, Math.min(...validCalories) - 100) : 0;
             const caloriesMax = validCalories.length > 0 ? Math.max(...validCalories) + 100 : 1000;
 
-            // 色分け
+            // 色分け（確実に動作させる）
             const backgroundColors = [];
             const borderColors = [];
             
-            dateRange.forEach(date => {
-                const dateStr = date.toISOString().split('T')[0];
+            for (let i = 0; i < dateRange.length; i++) {
+                const dateStr = dateRange[i].toISOString().split('T')[0];
                 const hasTraining = hasTrainingOnDate(dateStr);
-                const hasCalories = totalCaloriesData[dateRange.indexOf(date)] > 0;
+                const calories = totalCaloriesData[i];
                 
-                if (hasCalories) {
+                if (calories && calories > 0) {
                     if (hasTraining) {
-                        backgroundColors.push('rgba(217, 51, 63, 0.8)'); // 筋トレ日: #d9333f (濃い赤)
+                        // 筋トレ実施日: 赤色
+                        backgroundColors.push('rgba(217, 51, 63, 0.8)');
                         borderColors.push('#d9333f');
                     } else {
-                        backgroundColors.push('rgba(16, 185, 129, 0.6)'); // ウォーキングのみ: #10b981 (緑)
+                        // ウォーキングのみ: 緑色  
+                        backgroundColors.push('rgba(16, 185, 129, 0.6)');
                         borderColors.push('#10b981');
                     }
                 } else {
-                    backgroundColors.push('rgba(200, 200, 200, 0.3)'); // データなし: グレー
+                    // データなし: グレー
+                    backgroundColors.push('rgba(200, 200, 200, 0.3)');
                     borderColors.push('#cccccc');
                 }
-            });
+            }
 
             try {
                 analysisChart = new Chart(ctx, {
@@ -1317,9 +1320,9 @@
                         }]
                     },
                     options: {
-                        responsive: false, // スマホではresponsiveを無効化
-                        maintainAspectRatio: false,
-                        aspectRatio: undefined,
+                        responsive: isMobile ? false : true, // PCは元の設定、スマホのみ無効化
+                        maintainAspectRatio: isMobile ? false : true, // PCは4:3維持
+                        aspectRatio: isMobile ? undefined : 4/3, // PCのみ4:3比率
                         interaction: {
                             mode: 'index',
                             intersect: false
