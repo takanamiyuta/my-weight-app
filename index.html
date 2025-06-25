@@ -319,20 +319,24 @@
                 grid-template-columns: 1fr;
             }
 
+            /* テーブル用スクロール設定 */
             .table-container {
-                margin: 0 -20px; /* 画面端まで使用 */
+                margin: 0 -20px;
                 border-radius: 0;
+                padding: 0 20px;
+                box-sizing: border-box;
             }
 
             .data-table {
-                min-width: 900px; /* スマホでも十分な幅を確保 */
+                min-width: 1000px; /* スマホで十分な幅を確保 */
                 font-size: 0.85rem;
             }
 
             .data-table th,
             .data-table td {
                 padding: 10px 6px;
-                min-width: 90px; /* セル幅を少し広く */
+                min-width: 110px;
+                font-size: 0.8rem;
             }
 
             .mobile-header {
@@ -343,14 +347,20 @@
                 display: none;
             }
 
+            /* グラフ用スクロール設定 */
             .chart-container {
                 padding: 15px;
-                margin: 0 -20px; /* 画面端まで使用 */
+                margin: 0 -20px 30px;
                 border-radius: 0;
             }
 
+            .chart-scroll-container {
+                margin: 0 -15px;
+                padding: 0 15px;
+            }
+
             .chart-wrapper {
-                min-width: 1800px; /* スマホでは3倍幅 */
+                width: 1800px; /* スマホでは3倍幅 */
                 height: 350px;
             }
 
@@ -361,14 +371,37 @@
                 margin-bottom: 5px;
                 white-space: nowrap;
             }
+
+            /* スクロールバーのスタイル調整 */
+            .table-container::-webkit-scrollbar,
+            .chart-scroll-container::-webkit-scrollbar {
+                height: 8px;
+            }
+
+            .table-container::-webkit-scrollbar-track,
+            .chart-scroll-container::-webkit-scrollbar-track {
+                background: #f1f5f9;
+                border-radius: 4px;
+            }
+
+            .table-container::-webkit-scrollbar-thumb,
+            .chart-scroll-container::-webkit-scrollbar-thumb {
+                background: #94a3b8;
+                border-radius: 4px;
+            }
+
+            .table-container::-webkit-scrollbar-thumb:hover,
+            .chart-scroll-container::-webkit-scrollbar-thumb:hover {
+                background: #64748b;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-                        <div class="header">
+        <div class="header">
             <h1>💪 俺の大会までの道のり</h1>
-            <p>Ver1.04 [スマホスクロール対応]</p>
+            <p>Ver1.05 [スクロール修正版]</p>
         </div>
 
         <div class="tabs">
@@ -580,8 +613,10 @@
         <div id="analysis" class="tab-content">
             <div class="chart-container">
                 <h3 id="chart-title">大会当日は計算中...で着地見込み！</h3>
-                <div class="chart-wrapper">
-                    <canvas id="analysisChart"></canvas>
+                <div class="chart-scroll-container">
+                    <div class="chart-wrapper">
+                        <canvas id="analysisChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
