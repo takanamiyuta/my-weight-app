@@ -361,15 +361,21 @@
             }
 
             .data-table {
-                min-width: 800px; /* 最小幅を設定して横スクロールを促進 */
+                min-width: 900px; /* 幅を広げてボタンが見えるように */
                 font-size: 0.8rem;
             }
 
             .data-table th,
             .data-table td {
                 padding: 8px 6px;
-                min-width: 80px; /* 最小幅を設定 */
+                min-width: 90px; /* 最小幅を広げる */
                 font-size: 0.75rem;
+            }
+
+            /* 操作ボタンのカラムは少し広く */
+            .data-table th:last-child,
+            .data-table td:last-child {
+                min-width: 120px;
             }
 
             .mobile-header {
@@ -392,12 +398,14 @@
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
                 width: 100%;
-                aspect-ratio: unset; /* モバイルでは固定高さ */
+                height: 50vh; /* 画面の高さの50%を使用 */
+                min-height: 300px; /* 最小高さを確保 */
+                max-height: 500px; /* 最大高さを制限 */
             }
 
             .chart-wrapper canvas {
-                min-width: 600px !important; /* 最小幅を設定して横スクロールを促進 */
-                height: 300px !important; /* 固定高さ */
+                min-width: 800px !important; /* 横スクロール用の最小幅 */
+                height: 100% !important; /* コンテナの高さに合わせる */
             }
 
             .btn {
@@ -432,7 +440,7 @@
     <div class="container">
         <div class="header">
             <h1>💪 俺の大会までの道のり</h1>
-            <p>Ver1.08 [改善版：UI調整・グラフ最適化・カラム見直し]</p>
+            <p>Ver1.09 [UI最適化・スクロール改善・最小値表示]</p>
         </div>
 
         <div class="tabs">
@@ -967,6 +975,20 @@
             return Math.max(1, Math.round(baseCalories)); // 最低1kcal
         }
 
+        // 最小体重記録の取得
+        function getMinimumWeight(currentDate) {
+            const sortedData = [...dailyData]
+                .filter(item => item.date <= currentDate)
+                .sort((a, b) => a.weight - b.weight);
+            return sortedData.length > 0 ? sortedData[0].weight : null;
+        }
+
+        // 体重が最小記録かどうかの判定
+        function isMinimumWeight(weight, date) {
+            const minWeight = getMinimumWeight(date);
+            return minWeight !== null && weight === minWeight;
+        }
+
         // 筋トレ実施日判定
         function hasTrainingOnDate(date) {
             return trainingData.some(t => t.date === date);
@@ -1044,10 +1066,14 @@
                 const dateInfo = formatDateWithDay(item.date);
                 const walkingCalories = calculateWalkingCalories(item.steps);
                 const trainingCalories = calculateTrainingCalories(item.date);
+                
+                // 最小体重記録の判定
+                const isMinWeight = isMinimumWeight(item.weight, item.date);
+                const weightDisplay = isMinWeight ? `${item.weight} 👑` : item.weight;
 
                 row.innerHTML = `
                     <td class="${dateInfo.className}">${dateInfo.formatted}</td>
-                    <td>${item.weight}</td>
+                    <td>${weightDisplay}</td>
                     <td class="${weightDiffClass}">${weightDiff}</td>
                     <td>${item.calories}</td>
                     <td>${item.steps.toLocaleString()}</td>
@@ -1055,8 +1081,8 @@
                     <td>${trainingCalories}</td>
                     <td>${item.event || '-'}</td>
                     <td>
-                        <button class="btn" onclick="editDailyData('${item.date}')" style="padding: 5px 10px; font-size: 0.8rem; margin-right: 5px;">編集</button>
-                        <button class="btn" onclick="deleteDailyData('${item.date}')" style="padding: 5px 10px; font-size: 0.8rem;">削除</button>
+                        <button class="btn" onclick="editDailyData('${item.date}')" style="padding: 4px 8px; font-size: 0.7rem; margin-right: 3px;">編集</button>
+                        <button class="btn" onclick="deleteDailyData('${item.date}')" style="padding: 4px 8px; font-size: 0.7rem;">削除</button>
                     </td>
                 `;
                 tbody.appendChild(row);
@@ -1084,8 +1110,8 @@
                     <td>${item.bodyPart || getBodyPart(item.exercise)}</td>
                     <td>${item.intensity || calculateIntensity(item.weight, item.reps, item.sets)}</td>
                     <td>
-                        <button class="btn" onclick="editTrainingData(${index})" style="padding: 5px 10px; font-size: 0.8rem; margin-right: 5px;">編集</button>
-                        <button class="btn" onclick="deleteTrainingData(${index})" style="padding: 5px 10px; font-size: 0.8rem;">削除</button>
+                        <button class="btn" onclick="editTrainingData(${index})" style="padding: 4px 8px; font-size: 0.7rem; margin-right: 3px;">編集</button>
+                        <button class="btn" onclick="deleteTrainingData(${index})" style="padding: 4px 8px; font-size: 0.7rem;">削除</button>
                     </td>
                 `;
                 tbody.appendChild(row);
@@ -1258,16 +1284,14 @@
                 chartTitle.textContent = '大会当日は計算中...で着地見込み！';
             }
 
-            // 軸の範囲計算（体重の下限を予測値に合わせて広げる）
+            // 軸の範囲計算（体重の下限をシミュレーション値に合わせる）
             const validWeights = weightData.filter(w => w !== null && !isNaN(w));
             let weightMin = validWeights.length > 0 ? Math.min(...validWeights) - 2 : 60;
             let weightMax = validWeights.length > 0 ? Math.max(...validWeights) + 2 : 80;
             
-            // 予測値を考慮してY軸範囲を調整
-            if (weightPrediction.minWeight) {
-                weightMin = Math.min(weightMin, weightPrediction.minWeight - 1);
-            }
+            // 予測値を考慮してY軸範囲を調整（最下限は一番重いシミュレーション重量）
             if (weightPrediction.maxWeight) {
+                weightMin = weightPrediction.maxWeight - 1; // シミュレーション最重量を下限に
                 weightMax = Math.max(weightMax, weightPrediction.maxWeight + 1);
             }
 
@@ -1331,8 +1355,8 @@
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: true,
-                        aspectRatio: 4/3, // 4:3の比率を設定
+                        maintainAspectRatio: false, // モバイルでは縦横比を固定しない
+                        aspectRatio: window.innerWidth > 768 ? 4/3 : undefined, // デスクトップのみ4:3
                         interaction: {
                             mode: 'index',
                             intersect: false
