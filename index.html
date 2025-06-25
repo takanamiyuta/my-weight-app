@@ -717,7 +717,7 @@
     <div class="container">
         <div class="header">
             <h1>💪 俺の大会までの道のり</h1>
-            <p>Ver1.33 [目標設定API完成 - Supabase連携・PC⇔スマホ同期]</p>
+            <p>Ver1.34 [スマホ入力デグレ修正 - input→blurイベント変更]</p>
         </div>
 
         <div class="tabs">
@@ -1066,34 +1066,34 @@
         function setupInputValidation() {
             // 体重入力の検証
             const weightInput = document.getElementById('weight');
-            weightInput.addEventListener('input', function() {
+            weightInput.addEventListener('blur', function() {
                 const value = parseFloat(this.value);
-                if (value < 40) this.value = 40;
-                if (value > 150) this.value = 150;
+                if (value && value < 40) this.value = 40;
+                if (value && value > 150) this.value = 150;
             });
 
             // カロリー入力の検証
             const caloriesInput = document.getElementById('calories');
-            caloriesInput.addEventListener('input', function() {
+            caloriesInput.addEventListener('blur', function() {
                 const value = parseInt(this.value);
-                if (value < 800) this.value = 800;
-                if (value > 5000) this.value = 5000;
+                if (value && value < 800) this.value = 800;
+                if (value && value > 5000) this.value = 5000;
             });
 
             // 歩数入力の検証
             const stepsInput = document.getElementById('steps');
-            stepsInput.addEventListener('input', function() {
+            stepsInput.addEventListener('blur', function() {
                 const value = parseInt(this.value);
-                if (value < 0) this.value = 0;
-                if (value > 50000) this.value = 50000;
+                if (value && value < 0) this.value = 0;
+                if (value && value > 50000) this.value = 50000;
             });
 
             // トレーニング重量の検証
             const trainingWeightInput = document.getElementById('training-weight');
-            trainingWeightInput.addEventListener('input', function() {
+            trainingWeightInput.addEventListener('blur', function() {
                 const value = parseFloat(this.value);
-                if (value < 1) this.value = 1;
-                if (value > 300) this.value = 300;
+                if (value && value < 1) this.value = 1;
+                if (value && value > 300) this.value = 300;
             });
         }
 
