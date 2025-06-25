@@ -399,13 +399,23 @@
                 -webkit-overflow-scrolling: touch;
                 width: 100%;
                 height: 50vh; /* 画面の高さの50%を使用 */
-                min-height: 300px; /* 最小高さを確保 */
+                min-height: 350px; /* 最小高さを増加 */
                 max-height: 500px; /* 最大高さを制限 */
+                position: relative;
             }
 
             .chart-wrapper canvas {
-                min-width: 800px !important; /* 横スクロール用の最小幅 */
+                min-width: 1000px !important; /* 横スクロール用の最小幅を増加 */
                 height: 100% !important; /* コンテナの高さに合わせる */
+            }
+
+            /* スマホ専用の高解像度対応 */
+            @media (max-width: 768px) {
+                .chart-wrapper canvas {
+                    image-rendering: -webkit-optimize-contrast; /* Webkit系での高品質レンダリング */
+                    image-rendering: crisp-edges; /* エッジを鮮明に */
+                    image-rendering: pixelated; /* ピクセル単位での鮮明化 */
+                }
             }
 
             .btn {
@@ -440,7 +450,7 @@
     <div class="container">
         <div class="header">
             <h1>💪 俺の大会までの道のり</h1>
-            <p>Ver1.09 [UI最適化・スクロール改善・最小値表示]</p>
+            <p>Ver1.11 [スマホ・PC完全出し分け対応・最適化]</p>
         </div>
 
         <div class="tabs">
@@ -1212,6 +1222,7 @@
         // 分析グラフ描画
         function drawAnalysisChart() {
             const ctx = document.getElementById('analysisChart').getContext('2d');
+            const isMobile = window.innerWidth <= 768;
             
             if (analysisChart) {
                 analysisChart.destroy();
@@ -1315,6 +1326,120 @@
             });
 
             try {
+                const chartOptions = {
+                    responsive: true,
+                    maintainAspectRatio: !isMobile, // PCでは縦横比固定、スマホでは自由
+                    aspectRatio: !isMobile ? 4/3 : undefined, // PCのみ4:3比率
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    size: isMobile ? 14 : 12 // スマホでは凡例文字を大きく
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                afterBody: function(context) {
+                                    const dataIndex = context[0].dataIndex;
+                                    const event = eventData[dataIndex];
+                                    const dateStr = dateRange[dataIndex].toISOString().split('T')[0];
+                                    
+                                    let tooltipText = '';
+                                    if (event && context[0].datasetIndex === 0) {
+                                        tooltipText += `イベント: ${event}`;
+                                    }
+                                    if (context[0].datasetIndex === 1 && dataIndex === labels.length - 1) {
+                                        tooltipText += '10月18日の予測（最重量）';
+                                    }
+                                    if (context[0].datasetIndex === 2) {
+                                        const hasTraining = hasTrainingOnDate(dateStr);
+                                        tooltipText += hasTraining ? '筋トレ実施日' : 'ウォーキングのみ';
+                                    }
+                                    return tooltipText;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: '日付',
+                                font: {
+                                    size: isMobile ? 14 : 12 // スマホでは軸タイトルを大きく
+                                }
+                            },
+                            ticks: {
+                                font: {
+                                    size: isMobile ? 12 : 10 // スマホでは軸ラベルを大きく
+                                }
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: '体重 (kg)',
+                                font: {
+                                    size: isMobile ? 14 : 12 // スマホでは軸タイトルを大きく
+                                }
+                            },
+                            ticks: {
+                                font: {
+                                    size: isMobile ? 12 : 10 // スマホでは軸ラベルを大きく
+                                }
+                            },
+                            min: weightMin,
+                            max: weightMax
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: '消費カロリー (kcal)',
+                                font: {
+                                    size: isMobile ? 14 : 12 // スマホでは軸タイトルを大きく
+                                }
+                            },
+                            ticks: {
+                                font: {
+                                    size: isMobile ? 12 : 10 // スマホでは軸ラベルを大きく
+                                }
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            },
+                            min: caloriesMin,
+                            max: caloriesMax
+                        }
+                    }
+                };
+
+                // スマホでのみ高解像度対応とスタイル調整を追加
+                if (isMobile) {
+                    chartOptions.devicePixelRatio = window.devicePixelRatio || 1;
+                    chartOptions.elements = {
+                        point: {
+                            hoverRadius: 8 // スマホでのホバー時の点を大きく
+                        },
+                        line: {
+                            borderJoinStyle: 'round', // 線の接続部を丸く
+                            borderCapStyle: 'round'   // 線の端を丸く
+                        }
+                    };
+                }
+
                 analysisChart = new Chart(ctx, {
                     type: 'line',
                     data: {
@@ -1324,20 +1449,20 @@
                             data: weightData,
                             borderColor: '#ef4444',
                             backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                            borderWidth: 3,
+                            borderWidth: isMobile ? 4 : 3, // スマホでは線を太く
                             yAxisID: 'y',
                             tension: 0.1,
                             pointBackgroundColor: '#ef4444',
                             pointBorderColor: '#ffffff',
-                            pointBorderWidth: 2,
-                            pointRadius: 5,
+                            pointBorderWidth: isMobile ? 3 : 2, // スマホでは境界線を太く
+                            pointRadius: isMobile ? 6 : 5, // スマホでは点を大きく
                             spanGaps: true
                         }, {
                             label: '予測（最重量）',
                             data: predictionData,
                             borderColor: '#ef4444',
                             backgroundColor: 'transparent',
-                            borderWidth: 2,
+                            borderWidth: isMobile ? 3 : 2, // スマホでは線を太く
                             borderDash: [5, 5],
                             yAxisID: 'y',
                             tension: 0,
@@ -1349,81 +1474,30 @@
                             type: 'bar',
                             backgroundColor: backgroundColors,
                             borderColor: borderColors,
-                            borderWidth: 1,
+                            borderWidth: isMobile ? 2 : 1, // スマホでは境界線を太く
                             yAxisID: 'y1'
                         }]
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false, // モバイルでは縦横比を固定しない
-                        aspectRatio: window.innerWidth > 768 ? 4/3 : undefined, // デスクトップのみ4:3
-                        interaction: {
-                            mode: 'index',
-                            intersect: false
-                        },
-                        plugins: {
-                            legend: {
-                                position: 'top'
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    afterBody: function(context) {
-                                        const dataIndex = context[0].dataIndex;
-                                        const event = eventData[dataIndex];
-                                        const dateStr = dateRange[dataIndex].toISOString().split('T')[0];
-                                        
-                                        let tooltipText = '';
-                                        if (event && context[0].datasetIndex === 0) {
-                                            tooltipText += `イベント: ${event}`;
-                                        }
-                                        if (context[0].datasetIndex === 1 && dataIndex === labels.length - 1) {
-                                            tooltipText += '10月18日の予測（最重量）';
-                                        }
-                                        if (context[0].datasetIndex === 2) {
-                                            const hasTraining = hasTrainingOnDate(dateStr);
-                                            tooltipText += hasTraining ? '筋トレ実施日' : 'ウォーキングのみ';
-                                        }
-                                        return tooltipText;
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            x: {
-                                display: true,
-                                title: {
-                                    display: true,
-                                    text: '日付'
-                                }
-                            },
-                            y: {
-                                type: 'linear',
-                                display: true,
-                                position: 'left',
-                                title: {
-                                    display: true,
-                                    text: '体重 (kg)'
-                                },
-                                min: weightMin,
-                                max: weightMax
-                            },
-                            y1: {
-                                type: 'linear',
-                                display: true,
-                                position: 'right',
-                                title: {
-                                    display: true,
-                                    text: '消費カロリー (kcal)'
-                                },
-                                grid: {
-                                    drawOnChartArea: false
-                                },
-                                min: caloriesMin,
-                                max: caloriesMax
-                            }
-                        }
-                    }
+                    options: chartOptions
                 });
+                
+                // スマホでのみ高解像度対応の追加設定
+                if (isMobile) {
+                    const canvas = analysisChart.canvas;
+                    const rect = canvas.getBoundingClientRect();
+                    const devicePixelRatio = window.devicePixelRatio || 1;
+                    
+                    canvas.width = rect.width * devicePixelRatio;
+                    canvas.height = rect.height * devicePixelRatio;
+                    canvas.style.width = rect.width + 'px';
+                    canvas.style.height = rect.height + 'px';
+                    
+                    const ctx = canvas.getContext('2d');
+                    ctx.scale(devicePixelRatio, devicePixelRatio);
+                    
+                    // チャートを再描画
+                    analysisChart.resize();
+                }
             } catch (error) {
                 console.error('グラフの描画でエラーが発生しました:', error);
                 const chartTitle = document.getElementById('chart-title');
