@@ -180,9 +180,6 @@
             border-radius: 10px;
             overflow: hidden;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            overflow-x: auto;
-            display: block;
-            white-space: nowrap;
         }
 
         .data-table thead,
@@ -192,18 +189,15 @@
             table-layout: fixed;
         }
 
-        .data-table thead {
-            width: calc(100% - 1em);
-        }
-
         .data-table th,
         .data-table td {
-            padding: 8px 4px;
+            padding: 12px 8px;
             text-align: left;
             border-bottom: 1px solid #e5e7eb;
             font-size: 0.9rem;
             overflow: hidden;
             text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .data-table th {
@@ -266,6 +260,12 @@
             width: 100%;
             aspect-ratio: 4/3; /* 4:3の比率を維持 */
             min-height: 400px;
+        }
+
+        /* テーブル横スクロール用コンテナ */
+        .table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .status-message {
@@ -352,25 +352,23 @@
                 margin-bottom: 20px;
             }
 
+            /* モバイル用テーブル設定 */
             .table-container {
-                width: calc(100vw - 50px);
-                margin-left: -20px;
-                margin-right: -20px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                margin: 0 -15px; /* タブコンテンツのパディング分を相殺 */
                 border-radius: 0;
-                border-left: none;
-                border-right: none;
             }
 
             .data-table {
-                width: 1400px;
+                min-width: 800px; /* 最小幅を設定して横スクロールを促進 */
                 font-size: 0.8rem;
             }
 
             .data-table th,
             .data-table td {
-                padding: 8px;
-                width: 140px;
-                min-width: 140px;
+                padding: 8px 6px;
+                min-width: 80px; /* 最小幅を設定 */
                 font-size: 0.75rem;
             }
 
@@ -382,24 +380,24 @@
                 display: none;
             }
 
+            /* モバイル用チャート設定 */
             .chart-container {
                 padding: 15px;
                 margin-bottom: 20px;
-            }
-
-            .chart-scroll-wrapper {
-                width: calc(100vw - 50px);
-                margin-left: -15px;
-                margin-right: -15px;
+                margin: 0 -15px 20px -15px; /* タブコンテンツのパディング分を相殺 */
                 border-radius: 0;
-                border-left: none;
-                border-right: none;
             }
 
             .chart-wrapper {
-                width: 2000px;
-                height: 350px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                width: 100%;
                 aspect-ratio: unset; /* モバイルでは固定高さ */
+            }
+
+            .chart-wrapper canvas {
+                min-width: 600px !important; /* 最小幅を設定して横スクロールを促進 */
+                height: 300px !important; /* 固定高さ */
             }
 
             .btn {
@@ -409,17 +407,23 @@
                 white-space: nowrap;
             }
 
+            /* スクロールバーのスタイリング */
             .table-container::-webkit-scrollbar,
-            .chart-scroll-wrapper::-webkit-scrollbar {
-                height: 12px;
+            .chart-wrapper::-webkit-scrollbar {
+                height: 8px;
                 background: #f1f5f9;
             }
 
             .table-container::-webkit-scrollbar-thumb,
-            .chart-scroll-wrapper::-webkit-scrollbar-thumb {
+            .chart-wrapper::-webkit-scrollbar-thumb {
                 background: #3b82f6;
-                border-radius: 6px;
-                border: 2px solid #f1f5f9;
+                border-radius: 4px;
+                border: 1px solid #f1f5f9;
+            }
+
+            .table-container::-webkit-scrollbar-thumb:hover,
+            .chart-wrapper::-webkit-scrollbar-thumb:hover {
+                background: #2563eb;
             }
         }
     </style>
@@ -652,10 +656,8 @@
         <div id="analysis" class="tab-content">
             <div class="chart-container">
                 <h3 id="chart-title">大会当日は計算中...で着地見込み！</h3>
-                <div class="chart-scroll-wrapper">
-                    <div class="chart-wrapper">
-                        <canvas id="analysisChart"></canvas>
-                    </div>
+                <div class="chart-wrapper">
+                    <canvas id="analysisChart"></canvas>
                 </div>
             </div>
         </div>
@@ -1231,9 +1233,8 @@
             // 範囲予測の計算
             const weightPrediction = calculateWeightPrediction(dailyData);
             
-            // 予測線データ（上限・下限の幅を持たせる）
-            let predictionMinData = new Array(labels.length).fill(null);
-            let predictionMaxData = new Array(labels.length).fill(null);
+            // 予測線データ（上限のみ表示）
+            let predictionData = new Array(labels.length).fill(null);
             
             if (weightPrediction.minWeight && weightPrediction.maxWeight) {
                 const currentIndex = dateRange.findIndex(date => {
@@ -1243,10 +1244,9 @@
                 
                 if (currentIndex >= 0) {
                     const endIndex = labels.length - 1;
-                    predictionMinData[currentIndex] = weightPrediction.currentWeight;
-                    predictionMinData[endIndex] = weightPrediction.minWeight;
-                    predictionMaxData[currentIndex] = weightPrediction.currentWeight;
-                    predictionMaxData[endIndex] = weightPrediction.maxWeight;
+                    // 一番重い重量（上限）のみの予測線
+                    predictionData[currentIndex] = weightPrediction.currentWeight;
+                    predictionData[endIndex] = weightPrediction.maxWeight;
                 }
             }
 
@@ -1309,8 +1309,8 @@
                             pointRadius: 5,
                             spanGaps: true
                         }, {
-                            label: '予測範囲（下限）',
-                            data: predictionMinData,
+                            label: '予測（最重量）',
+                            data: predictionData,
                             borderColor: '#ef4444',
                             backgroundColor: 'transparent',
                             borderWidth: 2,
@@ -1319,18 +1319,6 @@
                             tension: 0,
                             pointRadius: 0,
                             spanGaps: true
-                        }, {
-                            label: '予測範囲（上限）',
-                            data: predictionMaxData,
-                            borderColor: '#ef4444',
-                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                            borderWidth: 2,
-                            borderDash: [10, 5],
-                            yAxisID: 'y',
-                            tension: 0,
-                            pointRadius: 0,
-                            spanGaps: true,
-                            fill: '-1'
                         }, {
                             label: '総消費カロリー (kcal)',
                             data: totalCaloriesData,
@@ -1364,10 +1352,10 @@
                                         if (event && context[0].datasetIndex === 0) {
                                             tooltipText += `イベント: ${event}`;
                                         }
-                                        if ((context[0].datasetIndex === 1 || context[0].datasetIndex === 2) && dataIndex === labels.length - 1) {
-                                            tooltipText += '10月18日の予測範囲';
+                                        if (context[0].datasetIndex === 1 && dataIndex === labels.length - 1) {
+                                            tooltipText += '10月18日の予測（最重量）';
                                         }
-                                        if (context[0].datasetIndex === 3) {
+                                        if (context[0].datasetIndex === 2) {
                                             const hasTraining = hasTrainingOnDate(dateStr);
                                             tooltipText += hasTraining ? '筋トレ実施日' : 'ウォーキングのみ';
                                         }
