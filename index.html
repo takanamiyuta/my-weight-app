@@ -258,7 +258,14 @@
         .chart-container canvas {
             max-width: 100%;
             height: auto !important;
-            max-height: 400px;
+        }
+
+        /* デスクトップ用のチャートサイズ調整 */
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4/3; /* 4:3の比率を維持 */
+            min-height: 400px;
         }
 
         .status-message {
@@ -316,24 +323,24 @@
             }
 
             .tabs {
-                flex-direction: row; /* 横並びに戻す */
+                flex-direction: row;
             }
 
             .tab {
-                padding: 15px 5px; /* パディングを調整 */
-                font-size: 1.5rem; /* 絵文字用にサイズアップ */
+                padding: 15px 5px;
+                font-size: 1.5rem;
             }
 
             .tab .desktop-text {
-                display: none; /* デスクトップテキストを非表示 */
+                display: none;
             }
 
             .tab .mobile-text {
-                display: inline; /* モバイル絵文字を表示 */
+                display: inline;
             }
 
             .tab-content {
-                padding: 15px; /* パディングを減らす */
+                padding: 15px;
             }
 
             .form-grid {
@@ -341,13 +348,12 @@
             }
 
             .form-section {
-                padding: 20px; /* パディングを減らす */
+                padding: 20px;
                 margin-bottom: 20px;
             }
 
-            /* テーブル専用設定 */
             .table-container {
-                width: calc(100vw - 50px); /* 画面幅いっぱい */
+                width: calc(100vw - 50px);
                 margin-left: -20px;
                 margin-right: -20px;
                 border-radius: 0;
@@ -356,14 +362,14 @@
             }
 
             .data-table {
-                width: 1400px; /* さらに幅を増やす */
+                width: 1400px;
                 font-size: 0.8rem;
             }
 
             .data-table th,
             .data-table td {
                 padding: 8px;
-                width: 140px; /* セル幅を統一 */
+                width: 140px;
                 min-width: 140px;
                 font-size: 0.75rem;
             }
@@ -376,14 +382,13 @@
                 display: none;
             }
 
-            /* グラフ専用設定 */
             .chart-container {
                 padding: 15px;
                 margin-bottom: 20px;
             }
 
             .chart-scroll-wrapper {
-                width: calc(100vw - 50px); /* 画面幅いっぱい */
+                width: calc(100vw - 50px);
                 margin-left: -15px;
                 margin-right: -15px;
                 border-radius: 0;
@@ -391,9 +396,10 @@
                 border-right: none;
             }
 
-            .chart-inner {
-                width: 2000px; /* スマホでは超横長 */
+            .chart-wrapper {
+                width: 2000px;
                 height: 350px;
+                aspect-ratio: unset; /* モバイルでは固定高さ */
             }
 
             .btn {
@@ -403,7 +409,6 @@
                 white-space: nowrap;
             }
 
-            /* スクロールバーを見やすく */
             .table-container::-webkit-scrollbar,
             .chart-scroll-wrapper::-webkit-scrollbar {
                 height: 12px;
@@ -423,7 +428,7 @@
     <div class="container">
         <div class="header">
             <h1>💪 俺の大会までの道のり</h1>
-            <p>Ver1.07 [スマホタブ絵文字対応]</p>
+            <p>Ver1.08 [改善版：UI調整・グラフ最適化・カラム見直し]</p>
         </div>
 
         <div class="tabs">
@@ -620,8 +625,8 @@
                                 <th>重量 (kg)</th>
                                 <th>回数</th>
                                 <th>セット数</th>
-                                <th>推定1RM (kg)</th>
-                                <th>トレーニングボリューム</th>
+                                <th>部位</th>
+                                <th>強度</th>
                                 <th>操作</th>
                             </tr>
                             <tr class="mobile-header">
@@ -631,7 +636,7 @@
                                 <th>🔢</th>
                                 <th>🔢</th>
                                 <th>💪</th>
-                                <th>📊</th>
+                                <th>🔥</th>
                                 <th>❌</th>
                             </tr>
                         </thead>
@@ -648,7 +653,7 @@
             <div class="chart-container">
                 <h3 id="chart-title">大会当日は計算中...で着地見込み！</h3>
                 <div class="chart-scroll-wrapper">
-                    <div class="chart-inner">
+                    <div class="chart-wrapper">
                         <canvas id="analysisChart"></canvas>
                     </div>
                 </div>
@@ -803,21 +808,22 @@
             const weight = parseFloat(document.getElementById('training-weight').value);
             const reps = parseInt(document.getElementById('reps').value);
             const sets = parseInt(document.getElementById('sets').value);
+            const exercise = document.getElementById('exercise').value;
             
-            // 推定1RM計算
-            const estimated1RM = weight / (1.0278 - 0.0278 * reps);
+            // 部位の判定
+            const bodyPart = getBodyPart(exercise);
             
-            // トレーニングボリューム計算
-            const trainingVolume = estimated1RM * reps * sets;
+            // 強度の計算
+            const intensity = calculateIntensity(weight, reps, sets);
 
             const formData = {
                 date: document.getElementById('training-date').value,
-                exercise: document.getElementById('exercise').value,
+                exercise: exercise,
                 weight: weight,
                 reps: reps,
                 sets: sets,
-                estimated1RM: estimated1RM,
-                trainingVolume: trainingVolume
+                bodyPart: bodyPart,
+                intensity: intensity
             };
 
             try {
@@ -841,6 +847,40 @@
                 console.error('保存エラー:', error);
                 showStatus('データの保存に失敗しました', 'error');
             }
+        }
+
+        // 部位判定関数
+        function getBodyPart(exercise) {
+            const bodyPartMap = {
+                'ベンチプレス': '胸',
+                'ペックフライ': '胸',
+                'ディップス': '胸',
+                'デクラインプレス': '胸',
+                'ラットプルダウン': '背中',
+                'DYローイング': '背中',
+                'Tバーローイング': '背中',
+                'チンニング': '背中',
+                'マシンショルダープレス': '肩',
+                'ダンベルサイドレイズ': '肩',
+                'ダンベルリアレイズ': '肩',
+                'インクラインダンベルカール': '腕',
+                'デッドリフト': '背中',
+                'スクワット': '脚',
+                'ハックスクワット': '脚',
+                '45度レッグプレス': '脚'
+            };
+            return bodyPartMap[exercise] || 'その他';
+        }
+
+        // 強度計算関数
+        function calculateIntensity(weight, reps, sets) {
+            // 総重量 × 回数 × セット数で強度を算出
+            const totalVolume = weight * reps * sets;
+            
+            // 強度をカテゴリ分け
+            if (totalVolume >= 3000) return '高';
+            if (totalVolume >= 1500) return '中';
+            return '低';
         }
 
         // フォームクリア
@@ -923,6 +963,11 @@
             const baseCalories = (weight / baseWeight) * reps * sets * multiplier * 0.8;
             
             return Math.max(1, Math.round(baseCalories)); // 最低1kcal
+        }
+
+        // 筋トレ実施日判定
+        function hasTrainingOnDate(date) {
+            return trainingData.some(t => t.date === date);
         }
 
         // 範囲予測計算関数
@@ -1034,8 +1079,8 @@
                     <td>${item.weight}</td>
                     <td>${item.reps}</td>
                     <td>${item.sets}</td>
-                    <td>${item.estimated1RM ? item.estimated1RM.toFixed(1) : '-'}</td>
-                    <td>${item.trainingVolume ? Math.round(item.trainingVolume).toLocaleString() : '-'}</td>
+                    <td>${item.bodyPart || getBodyPart(item.exercise)}</td>
+                    <td>${item.intensity || calculateIntensity(item.weight, item.reps, item.sets)}</td>
                     <td>
                         <button class="btn" onclick="editTrainingData(${index})" style="padding: 5px 10px; font-size: 0.8rem; margin-right: 5px;">編集</button>
                         <button class="btn" onclick="deleteTrainingData(${index})" style="padding: 5px 10px; font-size: 0.8rem;">削除</button>
@@ -1205,22 +1250,45 @@
                 }
             }
 
-            // タイトルを更新
+            // タイトルを更新（シミュレーション値として上限を表示）
             const chartTitle = document.getElementById('chart-title');
             if (weightPrediction.minWeight && weightPrediction.maxWeight) {
-                chartTitle.textContent = `大会当日は${weightPrediction.minWeight.toFixed(1)}kg〜${weightPrediction.maxWeight.toFixed(1)}kgで着地見込み！`;
+                chartTitle.textContent = `大会当日は${weightPrediction.maxWeight.toFixed(1)}kg〜${weightPrediction.minWeight.toFixed(1)}kgで着地見込み！（シミュレーション：${weightPrediction.maxWeight.toFixed(1)}kg）`;
             } else {
                 chartTitle.textContent = '大会当日は計算中...で着地見込み！';
             }
 
-            // 軸の範囲計算
+            // 軸の範囲計算（体重の下限を予測値に合わせて広げる）
             const validWeights = weightData.filter(w => w !== null && !isNaN(w));
-            const weightMin = validWeights.length > 0 ? Math.min(...validWeights) - 2 : 60;
-            const weightMax = validWeights.length > 0 ? Math.max(...validWeights) + 2 : 80;
+            let weightMin = validWeights.length > 0 ? Math.min(...validWeights) - 2 : 60;
+            let weightMax = validWeights.length > 0 ? Math.max(...validWeights) + 2 : 80;
+            
+            // 予測値を考慮してY軸範囲を調整
+            if (weightPrediction.minWeight) {
+                weightMin = Math.min(weightMin, weightPrediction.minWeight - 1);
+            }
+            if (weightPrediction.maxWeight) {
+                weightMax = Math.max(weightMax, weightPrediction.maxWeight + 1);
+            }
 
             const validCalories = totalCaloriesData.filter(c => c !== null && !isNaN(c) && c > 0);
             const caloriesMin = validCalories.length > 0 ? Math.max(0, Math.min(...validCalories) - 100) : 0;
             const caloriesMax = validCalories.length > 0 ? Math.max(...validCalories) + 100 : 1000;
+
+            // 消費カロリーデータの色分け（筋トレ日とウォーキングのみの日）
+            const backgroundColors = [];
+            const borderColors = [];
+            
+            dateRange.forEach(date => {
+                const dateStr = date.toISOString().split('T')[0];
+                if (hasTrainingOnDate(dateStr)) {
+                    backgroundColors.push('rgba(217, 51, 63, 0.6)'); // 筋トレ日: #d9333f
+                    borderColors.push('#d9333f');
+                } else {
+                    backgroundColors.push('rgba(16, 185, 129, 0.6)'); // ウォーキングのみ: 元の色
+                    borderColors.push('#10b981');
+                }
+            });
 
             try {
                 analysisChart = new Chart(ctx, {
@@ -1267,15 +1335,16 @@
                             label: '総消費カロリー (kcal)',
                             data: totalCaloriesData,
                             type: 'bar',
-                            backgroundColor: 'rgba(16, 185, 129, 0.6)',
-                            borderColor: '#10b981',
+                            backgroundColor: backgroundColors,
+                            borderColor: borderColors,
                             borderWidth: 1,
                             yAxisID: 'y1'
                         }]
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: false,
+                        maintainAspectRatio: true,
+                        aspectRatio: 4/3, // 4:3の比率を設定
                         interaction: {
                             mode: 'index',
                             intersect: false
@@ -1289,13 +1358,20 @@
                                     afterBody: function(context) {
                                         const dataIndex = context[0].dataIndex;
                                         const event = eventData[dataIndex];
+                                        const dateStr = dateRange[dataIndex].toISOString().split('T')[0];
+                                        
+                                        let tooltipText = '';
                                         if (event && context[0].datasetIndex === 0) {
-                                            return `イベント: ${event}`;
+                                            tooltipText += `イベント: ${event}`;
                                         }
                                         if ((context[0].datasetIndex === 1 || context[0].datasetIndex === 2) && dataIndex === labels.length - 1) {
-                                            return '10月18日の予測範囲';
+                                            tooltipText += '10月18日の予測範囲';
                                         }
-                                        return '';
+                                        if (context[0].datasetIndex === 3) {
+                                            const hasTraining = hasTrainingOnDate(dateStr);
+                                            tooltipText += hasTraining ? '筋トレ実施日' : 'ウォーキングのみ';
+                                        }
+                                        return tooltipText;
                                     }
                                 }
                             }
@@ -1365,7 +1441,7 @@
         }
 
         function exportTrainingData() {
-            const headers = ['日付', '種目', '重量(kg)', '回数', 'セット数', '推定1RM(kg)', 'トレーニングボリューム'];
+            const headers = ['日付', '種目', '重量(kg)', '回数', 'セット数', '部位', '強度'];
             
             const csvContent = [
                 headers.join(','),
@@ -1375,8 +1451,8 @@
                     item.weight,
                     item.reps,
                     item.sets,
-                    item.estimated1RM ? item.estimated1RM.toFixed(1) : '',
-                    item.trainingVolume ? Math.round(item.trainingVolume) : ''
+                    item.bodyPart || getBodyPart(item.exercise),
+                    item.intensity || calculateIntensity(item.weight, item.reps, item.sets)
                 ].join(','))
             ].join('\n');
 
