@@ -717,7 +717,7 @@
     <div class="container">
         <div class="header">
             <h1>💪 俺の大会までの道のり</h1>
-            <p>Ver1.33 [目標設定API完成 - Supabase連携・PC⇔スマホ同期]</p>
+            <p>Ver1.36 [筋トレ消費カロリー現実化 - ゆっくり丁寧動作・実働レスト分離]</p>
         </div>
 
         <div class="tabs">
@@ -1038,6 +1038,13 @@
         let trainingData = [];
         let analysisChart = null;
         let targetGoal = null;
+        
+        // ユーザー基本情報（固定値）
+        const USER_PROFILE = {
+            age: 38,
+            height: 176, // cm
+            gender: 'male'
+        };
 
         // 日本の祝日データ (2025年)
         const holidays2025 = [
@@ -1066,34 +1073,34 @@
         function setupInputValidation() {
             // 体重入力の検証
             const weightInput = document.getElementById('weight');
-            weightInput.addEventListener('input', function() {
+            weightInput.addEventListener('blur', function() {
                 const value = parseFloat(this.value);
-                if (value < 40) this.value = 40;
-                if (value > 150) this.value = 150;
+                if (value && value < 40) this.value = 40;
+                if (value && value > 150) this.value = 150;
             });
 
             // カロリー入力の検証
             const caloriesInput = document.getElementById('calories');
-            caloriesInput.addEventListener('input', function() {
+            caloriesInput.addEventListener('blur', function() {
                 const value = parseInt(this.value);
-                if (value < 800) this.value = 800;
-                if (value > 5000) this.value = 5000;
+                if (value && value < 800) this.value = 800;
+                if (value && value > 5000) this.value = 5000;
             });
 
             // 歩数入力の検証
             const stepsInput = document.getElementById('steps');
-            stepsInput.addEventListener('input', function() {
+            stepsInput.addEventListener('blur', function() {
                 const value = parseInt(this.value);
-                if (value < 0) this.value = 0;
-                if (value > 50000) this.value = 50000;
+                if (value && value < 0) this.value = 0;
+                if (value && value > 50000) this.value = 50000;
             });
 
             // トレーニング重量の検証
             const trainingWeightInput = document.getElementById('training-weight');
-            trainingWeightInput.addEventListener('input', function() {
+            trainingWeightInput.addEventListener('blur', function() {
                 const value = parseFloat(this.value);
-                if (value < 1) this.value = 1;
-                if (value > 300) this.value = 300;
+                if (value && value < 1) this.value = 1;
+                if (value && value > 300) this.value = 300;
             });
         }
 
@@ -1469,26 +1476,151 @@
             let totalCalories = 0;
             
             dayTraining.forEach(training => {
-                const calories = calculateExerciseCalories(training.exercise, training.weight, training.reps, training.sets);
+                const calories = calculatePreciseExerciseCalories(training.exercise, training.weight, training.reps, training.sets);
                 totalCalories += calories;
             });
             
             return Math.round(totalCalories);
         }
 
-        function calculateExerciseCalories(exercise, weight, reps, sets) {
-            const baseWeight = 75;
-            const exerciseMultipliers = {
-                'ベンチプレス': 0.8, 'ペックフライ': 0.6, 'ディップス': 0.9, 'デクラインプレス': 0.7,
-                'ラットプルダウン': 0.7, 'DYローイング': 0.8, 'Tバーローイング': 0.8, 'チンニング': 1.0,
-                'マシンショルダープレス': 0.6, 'ダンベルサイドレイズ': 0.5, 'ダンベルリアレイズ': 0.5,
-                'インクラインダンベルカール': 0.4, 'デッドリフト': 1.2, 'スクワット': 1.1,
-                'ハックスクワット': 1.0, '45度レッグプレス': 0.9
+        // 精緻な筋トレ消費カロリー計算（ゆっくり丁寧動作版）
+        
+        // 種目別METs値（文献ベース）
+        const exerciseMETs = {
+            'デッドリフト': 8.0,
+            'スクワット': 7.5,
+            'ベンチプレス': 6.5,
+            'ハックスクワット': 7.0,
+            '45度レッグプレス': 6.5,
+            'ラットプルダウン': 6.0,
+            'DYローイング': 6.5,
+            'Tバーローイング': 6.0,
+            'チンニング': 7.0,
+            'ディップス': 6.5,
+            'マシンショルダープレス': 5.5,
+            'ペックフライ': 5.0,
+            'デクラインプレス': 6.0,
+            'ダンベルサイドレイズ': 4.5,
+            'ダンベルリアレイズ': 4.0,
+            'インクラインダンベルカール': 4.5
+        };
+        
+        // ゆっくり丁寧な動作時間（秒/回）
+        const slowTimePerRep = {
+            'デッドリフト': 8.0,           // 下降3秒+停止1秒+挙上3秒+リセット1秒
+            'スクワット': 6.0,             // 下降2.5秒+停止1秒+挙上2.5秒
+            'ベンチプレス': 6.0,           // 下降2.5秒+停止1秒+挙上2.5秒
+            'ハックスクワット': 5.5,       // 下降2秒+停止1秒+挙上2.5秒
+            '45度レッグプレス': 5.0,       // 下降2秒+停止1秒+挙上2秒
+            'ラットプルダウン': 4.5,       // 引き2秒+停止0.5秒+戻し2秒
+            'DYローイング': 5.0,           // 引き2秒+停止1秒+戻し2秒
+            'Tバーローイング': 5.0,        // 引き2秒+停止1秒+戻し2秒
+            'チンニング': 6.0,             // 上昇2.5秒+停止1秒+下降2.5秒
+            'ディップス': 5.5,             // 下降2秒+停止1秒+挙上2.5秒
+            'マシンショルダープレス': 4.5, // 挙上2秒+停止0.5秒+下降2秒
+            'ペックフライ': 4.0,           // 閉じ1.5秒+停止1秒+開き1.5秒
+            'デクラインプレス': 5.5,       // 下降2秒+停止1秒+挙上2.5秒
+            'ダンベルサイドレイズ': 4.0,   // 挙上1.5秒+停止1秒+下降1.5秒
+            'ダンベルリアレイズ': 3.5,     // 挙上1.5秒+停止0.5秒+下降1.5秒
+            'インクラインダンベルカール': 4.5 // 巻き上げ2秒+停止0.5秒+下降2秒
+        };
+        
+        // 種目別平均1RM（男性176cm/70kg基準）
+        const average1RM = {
+            'ベンチプレス': 85,
+            'スクワット': 115,
+            'デッドリフト': 135,
+            'ハックスクワット': 100,
+            '45度レッグプレス': 150,
+            'ラットプルダウン': 65,
+            'DYローイング': 70,
+            'Tバーローイング': 65,
+            'チンニング': 70,
+            'ディップス': 70,
+            'マシンショルダープレス': 55,
+            'ペックフライ': 45,
+            'デクラインプレス': 80,
+            'ダンベルサイドレイズ': 20,
+            'ダンベルリアレイズ': 15,
+            'インクラインダンベルカール': 25
+        };
+        
+        // 現在の体重取得
+        function getCurrentWeight() {
+            if (dailyData.length === 0) return 70; // デフォルト
+            const sortedData = [...dailyData].sort((a, b) => new Date(b.date) - new Date(a.date));
+            return sortedData[0].weight;
+        }
+        
+        // セット間レスト時間計算（ゆっくり丁寧=より疲労するため長めに）
+        function getRestTime(exercise, reps) {
+            // 大筋群・高強度種目は長めのレスト
+            if (['デッドリフト', 'スクワット', 'ベンチプレス'].includes(exercise)) {
+                return 210; // 3.5分（通常より30秒長く）
+            } else if (reps <= 6) {
+                return 180; // 3分（通常より30秒長く）
+            } else if (reps <= 12) {
+                return 150; // 2.5分（通常より30秒長く）
+            } else {
+                return 120; // 2分（通常より30秒長く）
+            }
+        }
+        
+        // 実働時間・レスト時間計算
+        function calculateWorkoutTimes(exercise, reps, sets) {
+            const repTime = slowTimePerRep[exercise] || 4.0;
+            const activeTimeSeconds = reps * repTime * sets;
+            const restTimePerSet = getRestTime(exercise, reps);
+            const totalRestTimeSeconds = restTimePerSet * (sets - 1);
+            
+            return {
+                activeMinutes: activeTimeSeconds / 60,
+                restMinutes: totalRestTimeSeconds / 60,
+                totalMinutes: (activeTimeSeconds + totalRestTimeSeconds) / 60
             };
-
-            const multiplier = exerciseMultipliers[exercise] || 0.6;
-            const baseCalories = (weight / baseWeight) * reps * sets * multiplier * 0.8;
-            return Math.max(1, Math.round(baseCalories));
+        }
+        
+        // 強度係数計算
+        function calculateIntensityFactor(weight, reps, exercise) {
+            // 1RM推定（Brzycki式）
+            const estimated1RM = weight * (36 / (37 - reps));
+            
+            // 相対強度
+            const avgRM = average1RM[exercise] || 60;
+            const relativeStrength = estimated1RM / avgRM;
+            
+            // 補正係数（0.7-1.5倍）
+            return Math.max(0.7, Math.min(1.5, 0.8 + relativeStrength * 0.4));
+        }
+        
+        // 精緻な筋トレ消費カロリー計算（ゆっくり丁寧版）
+        function calculatePreciseExerciseCalories(exercise, weight, reps, sets) {
+            const bodyWeight = getCurrentWeight();
+            
+            // 1. 時間計算（実働とレスト分離）
+            const times = calculateWorkoutTimes(exercise, reps, sets);
+            
+            // 2. 実働時消費カロリー（高METs）
+            const METs = exerciseMETs[exercise] || 5.0;
+            const activeCalories = METs * bodyWeight * (times.activeMinutes / 60) * 1.05;
+            
+            // 3. レスト時消費カロリー（基礎代謝レベル）
+            const restCalories = 1.2 * bodyWeight * (times.restMinutes / 60) * 1.05;
+            
+            // 4. 強度補正（実働分のみ）
+            const intensityFactor = calculateIntensityFactor(weight, reps, exercise);
+            const adjustedActiveCalories = activeCalories * intensityFactor;
+            
+            // 5. ゆっくり丁寧動作による追加効果（+10%）
+            const slowMotionBonus = 1.10;
+            
+            // 6. EPOC効果（控えめに5%）
+            const epocMultiplier = 1.05;
+            
+            // 7. 最終計算
+            const totalCalories = (adjustedActiveCalories + restCalories) * slowMotionBonus * epocMultiplier;
+            
+            return Math.max(1, Math.round(totalCalories));
         }
 
         // 筋トレ実施日判定
@@ -1509,41 +1641,170 @@
             return minWeight !== null && weight === minWeight;
         }
 
-        // 範囲予測計算関数
-        function calculateWeightPrediction(weightData) {
+        // 精緻な体重予測システム
+        
+        // ハリス・ベネディクト式による基礎代謝計算
+        function calculateBMR(weight, height, age) {
+            // 男性用の式
+            return 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age);
+        }
+        
+        // 指数平滑化法による重み付け平均
+        function calculateWeightedAverage(data, valueKey, alpha = 0.5) {
+            if (data.length === 0) return 0;
+            
+            const sortedData = [...data].sort((a, b) => new Date(a.date) - new Date(b.date));
+            let weightedValue = sortedData[0][valueKey];
+            
+            for (let i = 1; i < sortedData.length; i++) {
+                weightedValue = alpha * sortedData[i][valueKey] + (1 - alpha) * weightedValue;
+            }
+            
+            return weightedValue;
+        }
+        
+        // 代謝適応計算
+        function calculateMetabolicAdaptation(startWeight, currentWeight, daysElapsed) {
+            const weightLossPercent = ((startWeight - currentWeight) / startWeight) * 100;
+            const timeFactor = Math.min(daysElapsed / 90, 1); // 90日で最大適応
+            
+            let metabolicReduction = 0;
+            if (weightLossPercent >= 10) {
+                metabolicReduction = 0.05 + (weightLossPercent - 10) * 0.01;
+            } else if (weightLossPercent >= 5) {
+                metabolicReduction = (weightLossPercent - 5) * 0.01;
+            }
+            
+            const adaptationFactor = metabolicReduction * timeFactor;
+            return Math.min(adaptationFactor, 0.15); // 最大15%
+        }
+        
+        // 筋トレによる代謝向上効果
+        function calculateTrainingMetabolicBoost(trainingData, currentDate) {
+            let totalBoost = 0;
+            
+            // 1. EPOC効果（過去48時間）
+            const recentTraining = trainingData.filter(t => {
+                const daysDiff = (currentDate - new Date(t.date)) / (1000 * 60 * 60 * 24);
+                return daysDiff <= 2;
+            });
+            
+            recentTraining.forEach(training => {
+                const daysSince = (currentDate - new Date(training.date)) / (1000 * 60 * 60 * 24);
+                const intensity = calculateIntensity(training.weight, training.reps, training.sets);
+                
+                let epocEffect = 0;
+                if (intensity === '高') {
+                    epocEffect = 150 * Math.exp(-daysSince / 1.2);
+                } else if (intensity === '中') {
+                    epocEffect = 80 * Math.exp(-daysSince / 1.0);
+                } else {
+                    epocEffect = 40 * Math.exp(-daysSince / 0.8);
+                }
+                
+                totalBoost += epocEffect;
+            });
+            
+            // 2. 長期的筋肉量増加効果
+            const monthlyTraining = trainingData.filter(t => {
+                const daysDiff = (currentDate - new Date(t.date)) / (1000 * 60 * 60 * 24);
+                return daysDiff <= 30;
+            });
+            
+            const trainingFrequency = monthlyTraining.length;
+            let muscleGainFactor = 0;
+            
+            if (trainingFrequency >= 20) {
+                muscleGainFactor = 0.5;
+            } else if (trainingFrequency >= 12) {
+                muscleGainFactor = 0.3;
+            } else if (trainingFrequency >= 8) {
+                muscleGainFactor = 0.2;
+            } else if (trainingFrequency >= 4) {
+                muscleGainFactor = 0.1;
+            }
+            
+            // 開始からの経過月数（最大6ヶ月）
+            if (trainingData.length > 0) {
+                const startDate = new Date(Math.min(...trainingData.map(t => new Date(t.date))));
+                const monthsElapsed = Math.min((currentDate - startDate) / (1000 * 60 * 60 * 24 * 30), 6);
+                const totalMuscleGain = muscleGainFactor * monthsElapsed;
+                const muscleMetabolicBoost = totalMuscleGain * 13;
+                totalBoost += muscleMetabolicBoost;
+            }
+            
+            return Math.round(totalBoost);
+        }
+        
+        // 精密体重予測計算
+        function calculatePreciseWeightPrediction(weightData) {
             if (weightData.length < 2) {
                 return {
-                    minWeight: null,
-                    maxWeight: null,
+                    predictedWeight: weightData.length > 0 ? weightData[weightData.length - 1].weight : null,
                     currentWeight: weightData.length > 0 ? weightData[weightData.length - 1].weight : null
                 };
             }
 
-            const startDate = '2025-06-04';
-            const filteredData = weightData.filter(item => new Date(item.date) >= new Date(startDate));
-            
-            if (filteredData.length < 2) {
-                return {
-                    minWeight: null,
-                    maxWeight: null,
-                    currentWeight: weightData.length > 0 ? weightData[weightData.length - 1].weight : null
-                };
-            }
-
-            const currentWeight = filteredData[filteredData.length - 1].weight;
-            const latestDate = new Date(filteredData[filteredData.length - 1].date);
+            const currentWeight = getCurrentWeight();
+            const today = new Date();
             const targetDate = new Date('2025-10-18');
-            const daysToTarget = Math.ceil((targetDate - latestDate) / (1000 * 60 * 60 * 24));
-
-            const conservativeChange = -0.05;
-            const aggressiveChange = -0.12;
-
-            const minWeight = currentWeight + (aggressiveChange * daysToTarget);
-            const maxWeight = currentWeight + (conservativeChange * daysToTarget);
-
+            const remainingDays = Math.max(0, Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24)));
+            
+            if (remainingDays === 0) {
+                return {
+                    predictedWeight: currentWeight,
+                    currentWeight: currentWeight
+                };
+            }
+            
+            // 1. 基礎代謝計算
+            const baseBMR = calculateBMR(currentWeight, USER_PROFILE.height, USER_PROFILE.age);
+            
+            // 2. 代謝適応（目標設定がある場合のみ）
+            let adaptation = 0;
+            if (targetGoal) {
+                const startDate = new Date(targetGoal.setDate);
+                const daysElapsed = Math.ceil((today - startDate) / (1000 * 60 * 60 * 24));
+                adaptation = calculateMetabolicAdaptation(targetGoal.startWeight, currentWeight, daysElapsed);
+            }
+            const adaptedBMR = baseBMR * (1 - adaptation);
+            
+            // 3. 筋トレによる代謝向上
+            const trainingBoost = calculateTrainingMetabolicBoost(trainingData, today);
+            const finalBMR = adaptedBMR + trainingBoost;
+            
+            // 4. 直近データの重み付け平均（過去30日）
+            const recentData = dailyData.filter(d => {
+                const daysDiff = (today - new Date(d.date)) / (1000 * 60 * 60 * 24);
+                return daysDiff <= 30;
+            });
+            
+            if (recentData.length === 0) {
+                return {
+                    predictedWeight: currentWeight,
+                    currentWeight: currentWeight
+                };
+            }
+            
+            const avgIntakeCalories = calculateWeightedAverage(recentData, 'calories', 0.5);
+            
+            // 運動消費カロリー（歩行 + 筋トレ）
+            const avgExerciseCalories = recentData.map(d => {
+                const walkingCal = calculateWalkingCalories(d.steps);
+                const trainingCal = calculateTrainingCalories(d.date);
+                return { date: d.date, totalBurn: walkingCal + trainingCal };
+            });
+            const avgBurnedCalories = calculateWeightedAverage(avgExerciseCalories, 'totalBurn', 0.5);
+            
+            // 5. 日次カロリー収支
+            const dailyDeficit = finalBMR + avgBurnedCalories - avgIntakeCalories;
+            
+            // 6. 予測計算
+            const predictedWeightLoss = (dailyDeficit * remainingDays) / 7200; // 1kg = 7200kcal
+            const predictedWeight = currentWeight - predictedWeightLoss;
+            
             return {
-                minWeight: Math.max(50, minWeight),
-                maxWeight: Math.min(100, maxWeight),
+                predictedWeight: Math.max(40, predictedWeight), // 最低40kg
                 currentWeight: currentWeight
             };
         }
@@ -1764,10 +2025,10 @@
             });
 
             // 予測計算
-            const weightPrediction = calculateWeightPrediction(dailyData);
+            const weightPrediction = calculatePreciseWeightPrediction(dailyData);
             
             let predictionData = new Array(labels.length).fill(null);
-            if (weightPrediction.minWeight && weightPrediction.maxWeight) {
+            if (weightPrediction.predictedWeight && weightPrediction.currentWeight) {
                 const currentIndex = dateRange.findIndex(date => {
                     const dateStr = date.toISOString().split('T')[0];
                     return dailyData.some(d => d.date === dateStr);
@@ -1776,14 +2037,14 @@
                 if (currentIndex >= 0) {
                     const endIndex = labels.length - 1;
                     predictionData[currentIndex] = weightPrediction.currentWeight;
-                    predictionData[endIndex] = weightPrediction.maxWeight;
+                    predictionData[endIndex] = weightPrediction.predictedWeight;
                 }
             }
 
             // タイトル更新
             const chartTitle = document.getElementById('chart-title');
-            if (weightPrediction.minWeight && weightPrediction.maxWeight) {
-                chartTitle.textContent = `大会当日は${weightPrediction.maxWeight.toFixed(1)}kg〜${weightPrediction.minWeight.toFixed(1)}kgで着地見込み！`;
+            if (weightPrediction.predictedWeight) {
+                chartTitle.textContent = `大会当日は${weightPrediction.predictedWeight.toFixed(1)}kgで着地見込み！（精密予測）`;
             } else {
                 chartTitle.textContent = '大会当日は計算中...で着地見込み！';
             }
@@ -1793,9 +2054,9 @@
             let weightMin = validWeights.length > 0 ? Math.min(...validWeights) - 2 : 60;
             let weightMax = validWeights.length > 0 ? Math.max(...validWeights) + 2 : 80;
             
-            if (weightPrediction.maxWeight) {
-                weightMin = weightPrediction.maxWeight - 1;
-                weightMax = Math.max(weightMax, weightPrediction.maxWeight + 1);
+            if (weightPrediction.predictedWeight) {
+                weightMin = Math.min(weightMin, weightPrediction.predictedWeight - 1);
+                weightMax = Math.max(weightMax, weightPrediction.predictedWeight + 1);
             }
 
             const validCalories = totalCaloriesData.filter(c => c !== null && !isNaN(c) && c > 0);
@@ -1847,7 +2108,7 @@
                             pointRadius: isMobile ? 6 : 4,
                             spanGaps: true
                         }, {
-                            label: '予測（最重量）',
+                            label: '予測（精密計算）',
                             data: predictionData,
                             borderColor: '#ef4444',
                             backgroundColor: 'transparent',
@@ -1912,7 +2173,7 @@
                                             tooltipText += `イベント: ${event}`;
                                         }
                                         if (context[0].datasetIndex === 1 && dataIndex === labels.length - 1) {
-                                            tooltipText += '10月18日の予測（最重量）';
+                                            tooltipText += '10月18日の予測（精密計算）';
                                         }
                                         if (context[0].datasetIndex === 2) {
                                             const hasTraining = hasTrainingOnDate(dateStr);
