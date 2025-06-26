@@ -717,7 +717,7 @@
     <div class="container">
         <div class="header">
             <h1>💪 俺の大会までの道のり</h1>
-            <p>Ver1.35 [精密予測・筋トレ消費カロリー精緻化 - METs基準・BMR計算・代謝適応]</p>
+            <p>Ver1.36 [筋トレ消費カロリー現実化 - ゆっくり丁寧動作・実働レスト分離]</p>
         </div>
 
         <div class="tabs">
@@ -1483,7 +1483,7 @@
             return Math.round(totalCalories);
         }
 
-        // 精緻な筋トレ消費カロリー計算
+        // 精緻な筋トレ消費カロリー計算（ゆっくり丁寧動作版）
         
         // 種目別METs値（文献ベース）
         const exerciseMETs = {
@@ -1505,24 +1505,24 @@
             'インクラインダンベルカール': 4.5
         };
         
-        // 種目別1回あたり時間（秒）
-        const timePerRep = {
-            'デッドリフト': 4.0,
-            'スクワット': 3.5,
-            'ベンチプレス': 3.0,
-            'ハックスクワット': 3.0,
-            '45度レッグプレス': 2.5,
-            'ラットプルダウン': 2.5,
-            'DYローイング': 3.0,
-            'Tバーローイング': 3.0,
-            'チンニング': 3.5,
-            'ディップス': 3.0,
-            'マシンショルダープレス': 2.5,
-            'ペックフライ': 2.5,
-            'デクラインプレス': 3.0,
-            'ダンベルサイドレイズ': 2.0,
-            'ダンベルリアレイズ': 2.0,
-            'インクラインダンベルカール': 2.5
+        // ゆっくり丁寧な動作時間（秒/回）
+        const slowTimePerRep = {
+            'デッドリフト': 8.0,           // 下降3秒+停止1秒+挙上3秒+リセット1秒
+            'スクワット': 6.0,             // 下降2.5秒+停止1秒+挙上2.5秒
+            'ベンチプレス': 6.0,           // 下降2.5秒+停止1秒+挙上2.5秒
+            'ハックスクワット': 5.5,       // 下降2秒+停止1秒+挙上2.5秒
+            '45度レッグプレス': 5.0,       // 下降2秒+停止1秒+挙上2秒
+            'ラットプルダウン': 4.5,       // 引き2秒+停止0.5秒+戻し2秒
+            'DYローイング': 5.0,           // 引き2秒+停止1秒+戻し2秒
+            'Tバーローイング': 5.0,        // 引き2秒+停止1秒+戻し2秒
+            'チンニング': 6.0,             // 上昇2.5秒+停止1秒+下降2.5秒
+            'ディップス': 5.5,             // 下降2秒+停止1秒+挙上2.5秒
+            'マシンショルダープレス': 4.5, // 挙上2秒+停止0.5秒+下降2秒
+            'ペックフライ': 4.0,           // 閉じ1.5秒+停止1秒+開き1.5秒
+            'デクラインプレス': 5.5,       // 下降2秒+停止1秒+挙上2.5秒
+            'ダンベルサイドレイズ': 4.0,   // 挙上1.5秒+停止1秒+下降1.5秒
+            'ダンベルリアレイズ': 3.5,     // 挙上1.5秒+停止0.5秒+下降1.5秒
+            'インクラインダンベルカール': 4.5 // 巻き上げ2秒+停止0.5秒+下降2秒
         };
         
         // 種目別平均1RM（男性176cm/70kg基準）
@@ -1552,25 +1552,32 @@
             return sortedData[0].weight;
         }
         
-        // ワークアウト時間計算
-        function calculateWorkoutDuration(exercise, reps, sets) {
-            const repTime = timePerRep[exercise] || 2.5;
-            const setTime = reps * repTime; // 1セット時間（秒）
-            
-            // セット間レスト時間
-            let restTime;
+        // セット間レスト時間計算（ゆっくり丁寧=より疲労するため長めに）
+        function getRestTime(exercise, reps) {
+            // 大筋群・高強度種目は長めのレスト
             if (['デッドリフト', 'スクワット', 'ベンチプレス'].includes(exercise)) {
-                restTime = 180; // 3分
+                return 210; // 3.5分（通常より30秒長く）
             } else if (reps <= 6) {
-                restTime = 150; // 2.5分
+                return 180; // 3分（通常より30秒長く）
             } else if (reps <= 12) {
-                restTime = 120; // 2分
+                return 150; // 2.5分（通常より30秒長く）
             } else {
-                restTime = 90; // 1.5分
+                return 120; // 2分（通常より30秒長く）
             }
+        }
+        
+        // 実働時間・レスト時間計算
+        function calculateWorkoutTimes(exercise, reps, sets) {
+            const repTime = slowTimePerRep[exercise] || 4.0;
+            const activeTimeSeconds = reps * repTime * sets;
+            const restTimePerSet = getRestTime(exercise, reps);
+            const totalRestTimeSeconds = restTimePerSet * (sets - 1);
             
-            const totalSeconds = (setTime * sets) + (restTime * (sets - 1));
-            return totalSeconds / 60; // 分換算
+            return {
+                activeMinutes: activeTimeSeconds / 60,
+                restMinutes: totalRestTimeSeconds / 60,
+                totalMinutes: (activeTimeSeconds + totalRestTimeSeconds) / 60
+            };
         }
         
         // 強度係数計算
@@ -1586,29 +1593,34 @@
             return Math.max(0.7, Math.min(1.5, 0.8 + relativeStrength * 0.4));
         }
         
-        // 精緻な筋トレ消費カロリー計算
+        // 精緻な筋トレ消費カロリー計算（ゆっくり丁寧版）
         function calculatePreciseExerciseCalories(exercise, weight, reps, sets) {
             const bodyWeight = getCurrentWeight();
             
-            // 1. 時間計算
-            const durationMinutes = calculateWorkoutDuration(exercise, reps, sets);
+            // 1. 時間計算（実働とレスト分離）
+            const times = calculateWorkoutTimes(exercise, reps, sets);
             
-            // 2. 基本消費カロリー（METs）
+            // 2. 実働時消費カロリー（高METs）
             const METs = exerciseMETs[exercise] || 5.0;
-            const baseCalories = METs * bodyWeight * (durationMinutes / 60) * 1.05;
+            const activeCalories = METs * bodyWeight * (times.activeMinutes / 60) * 1.05;
             
-            // 3. 強度補正
+            // 3. レスト時消費カロリー（基礎代謝レベル）
+            const restCalories = 1.2 * bodyWeight * (times.restMinutes / 60) * 1.05;
+            
+            // 4. 強度補正（実働分のみ）
             const intensityFactor = calculateIntensityFactor(weight, reps, exercise);
+            const adjustedActiveCalories = activeCalories * intensityFactor;
             
-            // 4. EPOC効果
-            const intensity = calculateIntensity(weight, reps, sets);
-            let epocMultiplier = 1.08;
-            if (intensity === '高') epocMultiplier = 1.18;
-            else if (intensity === '中') epocMultiplier = 1.12;
+            // 5. ゆっくり丁寧動作による追加効果（+10%）
+            const slowMotionBonus = 1.10;
             
-            // 5. 最終計算
-            const finalCalories = baseCalories * intensityFactor * epocMultiplier;
-            return Math.max(1, Math.round(finalCalories));
+            // 6. EPOC効果（控えめに5%）
+            const epocMultiplier = 1.05;
+            
+            // 7. 最終計算
+            const totalCalories = (adjustedActiveCalories + restCalories) * slowMotionBonus * epocMultiplier;
+            
+            return Math.max(1, Math.round(totalCalories));
         }
 
         // 筋トレ実施日判定
