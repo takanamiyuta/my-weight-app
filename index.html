@@ -967,6 +967,8 @@
                     <div class="button-group">
                         <button type="submit" class="btn">トレーニング記録保存</button>
                         <button type="button" class="btn btn-secondary" onclick="clearTrainingForm()">クリア</button>
+                        <!-- ADD HERE: トレーニングプリセットボタン -->
+<button type="button" class="btn btn-secondary" onclick="loadYesterdayTraining()">昨日と同じ内容を入力</button>
                     </div>
                 </form>
             </div>
@@ -2375,6 +2377,36 @@
                 }
             }, 300);
         });
+// ADD HERE: 昨日のトレーニングを読み込んでフォームに反映
+function loadYesterdayTraining() {
+    if (trainingData.length === 0) {
+        showStatus('昨日のデータがありません', 'error');
+        return;
+    }
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yyyy = yesterday.getFullYear();
+    const mm = String(yesterday.getMonth() + 1).padStart(2, '0');
+    const dd = String(yesterday.getDate()).padStart(2, '0');
+    const yDate = `${yyyy}-${mm}-${dd}`;
+
+    const lastTraining = trainingData.filter(d => d.date === yDate);
+    if (lastTraining.length === 0) {
+        showStatus('昨日のデータがありません', 'error');
+        return;
+    }
+
+    const t = lastTraining[0];
+    document.getElementById('training-date').value = yDate;
+    document.getElementById('exercise').value = t.exercise;
+    document.getElementById('training-weight').value = t.weight;
+    document.getElementById('reps').value = t.reps;
+    document.getElementById('sets').value = t.sets;
+
+    showStatus('昨日のトレーニング内容を反映しました');
+}
+
     </script>
 </body>
 </html>
