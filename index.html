@@ -468,6 +468,151 @@
             margin-top: 20px;
         }
 
+
+        /* 予測詳細セクションのスタイル */
+        .prediction-details {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            border-radius: 15px;
+            margin: 15px 0;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .prediction-header {
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s ease;
+        }
+
+        .prediction-header:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .prediction-header h4 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        #prediction-toggle {
+            font-size: 1.2rem;
+            transition: transform 0.3s ease;
+        }
+
+        .prediction-content {
+            padding: 0 20px 20px 20px;
+            display: none;
+        }
+
+        .prediction-content.active {
+            display: block;
+        }
+
+        .prediction-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .prediction-item {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: transform 0.2s ease;
+        }
+
+        .prediction-item:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .prediction-icon {
+            font-size: 1.5rem;
+            width: 40px;
+            text-align: center;
+        }
+
+        .prediction-text {
+            flex: 1;
+        }
+
+        .prediction-label {
+            font-size: 0.85rem;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .prediction-value {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .confidence-high {
+            color: #10b981;
+        }
+
+        .confidence-low {
+            color: #f59e0b;
+        }
+
+        .plateau-detected {
+            color: #ef4444;
+        }
+
+        .plateau-normal {
+            color: #10b981;
+        }
+
+        /* モバイル対応 */
+        @media (max-width: 768px) {
+            .prediction-details {
+                margin: 10px 0;
+                border-radius: 10px;
+            }
+
+            .prediction-header {
+                padding: 12px 15px;
+            }
+
+            .prediction-header h4 {
+                font-size: 1rem;
+            }
+
+            .prediction-content {
+                padding: 0 15px 15px 15px;
+            }
+
+            .prediction-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .prediction-item {
+                padding: 12px;
+                gap: 10px;
+            }
+
+            .prediction-icon {
+                font-size: 1.3rem;
+                width: 35px;
+            }
+
+            .prediction-label {
+                font-size: 0.8rem;
+            }
+
+            .prediction-value {
+                font-size: 0.9rem;
+            }
+        }
         /* スマートフォン最適化 */
         @media (max-width: 768px) {
             .goal-section {
@@ -802,6 +947,45 @@
                         
                         <div id="clear-achievement" class="clear-achievement" style="display: none;">
                             🎉 Clear！ 🎉
+                        </div>
+
+                        <!-- 予測詳細セクション -->
+                        <div id="prediction-details" class="prediction-details" style="display: none;">
+                            <div class="prediction-header" onclick="togglePredictionDetails()">
+                                <h4>📊 予測詳細 <span id="prediction-toggle">▼</span></h4>
+                            </div>
+                            <div id="prediction-content" class="prediction-content">
+                                <div class="prediction-grid">
+                                    <div class="prediction-item">
+                                        <div class="prediction-icon">🎯</div>
+                                        <div class="prediction-text">
+                                            <div class="prediction-label">精密体重予測</div>
+                                            <div class="prediction-value" id="advanced-prediction">--kg</div>
+                                        </div>
+                                    </div>
+                                    <div class="prediction-item">
+                                        <div class="prediction-icon">⚠️</div>
+                                        <div class="prediction-text">
+                                            <div class="prediction-label">プラトー検出</div>
+                                            <div class="prediction-value" id="plateau-status">--</div>
+                                        </div>
+                                    </div>
+                                    <div class="prediction-item">
+                                        <div class="prediction-icon">📊</div>
+                                        <div class="prediction-text">
+                                            <div class="prediction-label">データ品質</div>
+                                            <div class="prediction-value" id="data-quality">--</div>
+                                        </div>
+                                    </div>
+                                    <div class="prediction-item">
+                                        <div class="prediction-icon">🏋️</div>
+                                        <div class="prediction-text">
+                                            <div class="prediction-label">筋トレ効果</div>
+                                            <div class="prediction-value" id="training-effect">--</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1357,7 +1541,7 @@
                     const result = await response.json();
                     showStatus('日次データを保存しました');
                     loadAllData(); // データを再読み込み
-                    updateGoalProgress(); // 目標進捗を更新
+                    updateGoalProgressWithDetails(); // 目標進捗と予測詳細を更新
                     clearDailyForm();
                 } else {
                     throw new Error('保存に失敗しました');
@@ -1810,6 +1994,140 @@
                 currentWeight: currentWeight
             };
         }
+
+// プラトー検出・外れ値除去・詳細筋トレ効果分析システム
+        
+        // 1. 線形回帰分析によるプラトー検出
+        function detectPlateau(weightData) {
+            if (weightData.length < 14) return { isPlateau: false, slope: null };
+            
+            // 過去14日のデータを取得
+            const recentData = weightData
+                .slice(-14)
+                .map((item, index) => ({ x: index, y: item.weight }));
+            
+            // 線形回帰計算
+            const n = recentData.length;
+            const sumX = recentData.reduce((sum, point) => sum + point.x, 0);
+            const sumY = recentData.reduce((sum, point) => sum + point.y, 0);
+            const sumXY = recentData.reduce((sum, point) => sum + (point.x * point.y), 0);
+            const sumXX = recentData.reduce((sum, point) => sum + (point.x * point.x), 0);
+            
+            const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+            const isPlateau = Math.abs(slope) < 0.02; // 0.02kg/日未満をプラトー判定
+            
+            return { isPlateau, slope };
+        }
+        
+        // 2. 四分位範囲法による外れ値検出
+        function detectOutliers(data) {
+            const calories = data.map(d => d.calories).sort((a, b) => a - b);
+            const q1 = calories[Math.floor(calories.length * 0.25)];
+            const q3 = calories[Math.floor(calories.length * 0.75)];
+            const iqr = q3 - q1;
+            const lowerBound = q1 - 1.5 * iqr;
+            const upperBound = q3 + 1.5 * iqr;
+            
+            return {
+                outlierDates: data.filter(d => 
+                    d.calories < lowerBound || 
+                    d.calories > upperBound ||
+                    (d.event && ['チートデイ', '会食', '飲み会'].some(keyword => 
+                        d.event.includes(keyword)))
+                ).map(d => d.date),
+                cleanData: data.filter(d => 
+                    d.calories >= lowerBound && 
+                    d.calories <= upperBound &&
+                    !(d.event && ['チートデイ', '会食', '飲み会'].some(keyword => 
+                        d.event.includes(keyword)))
+                )
+            };
+        }
+        
+        // 3. 詳細筋トレ効果分析
+        function calculateDetailedTrainingEffect(trainingData, dailyData) {
+            const today = new Date();
+            const fourWeeksAgo = new Date(today.getTime() - 28 * 24 * 60 * 60 * 1000);
+            
+            // 過去4週間のトレーニングデータ
+            const recentTraining = trainingData.filter(t => 
+                new Date(t.date) >= fourWeeksAgo
+            );
+            
+            if (recentTraining.length === 0) {
+                return { weeklyFrequency: 0, balanceBonus: 0, continuityBonus: 0, totalEffect: 0 };
+            }
+            
+            // 週間頻度計算
+            const weeklyFrequency = recentTraining.length / 4;
+            const frequencyEffect = weeklyFrequency * 15;
+            
+            // バランスボーナス計算（部位別バランス）
+            const bodyParts = {};
+            recentTraining.forEach(t => {
+                const part = getBodyPart(t.exercise);
+                bodyParts[part] = (bodyParts[part] || 0) + 1;
+            });
+            
+            const partCounts = Object.values(bodyParts);
+            const maxCount = Math.max(...partCounts);
+            const minCount = Math.min(...partCounts);
+            const balanceRatio = minCount / maxCount;
+            const balanceBonus = balanceRatio >= 0.7 ? frequencyEffect * 0.2 : 0; // 部位差30%以内で20%ボーナス
+            
+            // 継続性ボーナス計算
+            const trainingDays = [...new Set(recentTraining.map(t => t.date))];
+            const continuityRate = trainingDays.length / 28; // 28日中の実施率
+            const continuityBonus = continuityRate >= 0.8 ? frequencyEffect * 0.15 : 0; // 継続率80%以上で15%ボーナス
+            
+            const totalEffect = frequencyEffect + balanceBonus + continuityBonus;
+            
+            return {
+                weeklyFrequency: weeklyFrequency.toFixed(1),
+                balanceBonus: Math.round(balanceBonus),
+                continuityBonus: Math.round(continuityBonus),
+                totalEffect: Math.round(totalEffect)
+            };
+        }
+        
+        // 4. 統合予測分析
+        function getAdvancedPredictionAnalysis() {
+            if (dailyData.length === 0) return null;
+            
+            // 外れ値除去
+            const outlierAnalysis = detectOutliers(dailyData);
+            const cleanData = outlierAnalysis.cleanData;
+            
+            // プラトー検出
+            const plateauAnalysis = detectPlateau(cleanData);
+            
+            // 基本予測
+            const basePrediction = calculatePreciseWeightPrediction(cleanData);
+            
+            // プラトー調整
+            let adjustedPrediction = basePrediction.predictedWeight;
+            if (plateauAnalysis.isPlateau) {
+                adjustedPrediction += 0.5; // 保守的調整
+            }
+            
+            // 筋トレ効果分析
+            const trainingEffect = calculateDetailedTrainingEffect(trainingData, dailyData);
+            
+            // 信頼度計算
+            const dataQuality = cleanData.length >= 14 && outlierAnalysis.outlierDates.length <= 3;
+            const confidence = dataQuality && !plateauAnalysis.isPlateau ? 'high' : 'low';
+            
+            return {
+                predictedWeight: adjustedPrediction,
+                confidence: confidence,
+                plateau: plateauAnalysis,
+                dataQuality: {
+                    isGood: dataQuality,
+                    outliersRemoved: outlierAnalysis.outlierDates.length
+                },
+                trainingEffect: trainingEffect
+            };
+        }        
 
         // 日次データテーブル更新
         function updateDailyTable() {
@@ -2367,6 +2685,79 @@
             showStatus(`${filename} をダウンロードしました`);
         }
 
+        // 予測詳細セクションの表示・更新機能
+        
+        // 折りたたみ機能
+        function togglePredictionDetails() {
+            const content = document.getElementById('prediction-content');
+            const toggle = document.getElementById('prediction-toggle');
+            const details = document.getElementById('prediction-details');
+            
+            if (content.classList.contains('active')) {
+                content.classList.remove('active');
+                toggle.textContent = '▼';
+                details.style.display = 'none';
+            } else {
+                content.classList.add('active');
+                toggle.textContent = '▲';
+                details.style.display = 'block';
+                updatePredictionDetails(); // 表示時に更新
+            }
+        }
+        
+        // 予測詳細の更新
+        function updatePredictionDetails() {
+            const analysis = getAdvancedPredictionAnalysis();
+            
+            if (!analysis) {
+                // データ不足時は非表示
+                document.getElementById('prediction-details').style.display = 'none';
+                return;
+            }
+            
+            // 予測詳細を表示
+            document.getElementById('prediction-details').style.display = 'block';
+            
+            // 精密体重予測
+            const predictionEl = document.getElementById('advanced-prediction');
+            predictionEl.textContent = `${analysis.predictedWeight.toFixed(1)}kg (信頼度: ${analysis.confidence === 'high' ? '高' : '低'})`;
+            predictionEl.className = `prediction-value confidence-${analysis.confidence}`;
+            
+            // プラトー検出
+            const plateauEl = document.getElementById('plateau-status');
+            if (analysis.plateau.isPlateau) {
+                plateauEl.textContent = `検出 (変化率: ${(analysis.plateau.slope * 7).toFixed(2)}kg/週)`;
+                plateauEl.className = 'prediction-value plateau-detected';
+            } else {
+                plateauEl.textContent = 'なし';
+                plateauEl.className = 'prediction-value plateau-normal';
+            }
+            
+            // データ品質
+            const qualityEl = document.getElementById('data-quality');
+            if (analysis.dataQuality.isGood) {
+                qualityEl.textContent = `良好 (外れ値${analysis.dataQuality.outliersRemoved}件除外)`;
+                qualityEl.className = 'prediction-value plateau-normal';
+            } else {
+                qualityEl.textContent = `要注意 (外れ値${analysis.dataQuality.outliersRemoved}件除外)`;
+                qualityEl.className = 'prediction-value confidence-low';
+            }
+            
+            // 筋トレ効果
+            const trainingEl = document.getElementById('training-effect');
+            const effect = analysis.trainingEffect;
+            trainingEl.textContent = `+${effect.totalEffect}kcal/日 (週${effect.weeklyFrequency}回)`;
+            trainingEl.className = 'prediction-value';
+            
+            // バランス・継続性情報をツールチップとして追加
+            trainingEl.title = `バランスボーナス: +${effect.balanceBonus}kcal/日, 継続性ボーナス: +${effect.continuityBonus}kcal/日`;
+        }
+        
+        // 目標進捗更新時に予測詳細も更新
+        function updateGoalProgressWithDetails() {
+            updateGoalProgress(); // 既存の関数
+            updatePredictionDetails(); // 新しい詳細更新
+        }
         // ウィンドウリサイズ時のグラフ再描画
         let resizeTimeout;
         window.addEventListener('resize', function() {
