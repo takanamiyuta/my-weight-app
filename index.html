@@ -862,7 +862,7 @@
     <div class="container">
         <div class="header">
             <h1>💪 俺の大会までの道のり</h1>
-            <p>Ver1.38 [予測詳細セクションの自動表示機能を修正]</p>
+            <p>Ver1.39 - 日次データ編集バグ修正完了</p>
         </div>
 
         <div class="tabs">
@@ -1224,6 +1224,8 @@
         let trainingData = [];
         let analysisChart = null;
         let targetGoal = null;
+        let isEditingDaily = false;
+let editingDailyDate = null;
         
         // ユーザー基本情報（固定値）
         const USER_PROFILE = {
@@ -1529,6 +1531,17 @@
             }
 
             try {
+                // 編集モードの場合、古いデータを先に削除
+                if (isEditingDaily && editingDailyDate) {
+                    await fetch(`${API_BASE}/delete-daily-data`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ date: editingDailyDate })
+                    });
+                }
+
                 const response = await fetch(`${API_BASE}/save-daily-data`, {
                     method: 'POST',
                     headers: {
@@ -1542,6 +1555,9 @@
                     showStatus('日次データを保存しました');
                     loadAllData(); // データを再読み込み
                     updateGoalProgressWithDetails(); // 目標進捗と予測詳細を更新
+                    // 編集モードリセット
+                    isEditingDaily = false;
+                    editingDailyDate = null;
                     clearDailyForm();
                 } else {
                     throw new Error('保存に失敗しました');
@@ -2213,6 +2229,10 @@
             const item = dailyData.find(d => d.date === date);
             if (!item) return;
 
+            // 編集モードフラグを設定
+            isEditingDaily = true;
+            editingDailyDate = date;
+
             document.getElementById('daily-date').value = item.date;
             document.getElementById('weight').value = item.weight;
             document.getElementById('calories').value = item.calories;
@@ -2221,7 +2241,7 @@
 
             showTab('daily');
             document.getElementById('daily-form').scrollIntoView({ behavior: 'smooth' });
-            showStatus('データを編集モードで読み込みました。修正して保存してください。', 'success');
+            showStatus('編集モードです。修正して保存してください。', 'success');
         }
 
         function editTrainingData(index) {
